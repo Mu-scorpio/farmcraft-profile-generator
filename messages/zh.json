@@ -1,0 +1,129 @@
+{
+  "nav": {
+    "about": "说明",
+    "weather": "季节",
+    "weatherRain": "雨天",
+    "weatherClear": "晴天",
+    "github": "GitHub"
+  },
+  "hero": {
+    "title": "种下你的提交",
+    "subtitle": "把 GitHub 的每一次贡献，长成一座像素农场"
+  },
+  "input": {
+    "label": "输入 GitHub 用户名或仓库地址：",
+    "placeholder": "例如 octocat 或 owner/repo 或 https://github.com/...",
+    "hint": "用户名 → 贡献草地、战利品大厅、玩家护照  |  owner/repo → 仓库卡片",
+    "craft": "开始种植",
+    "mining": "浇水中...",
+    "demoHint": "先看看示例农场：",
+    "demoAction": "载入示例"
+  },
+  "recipe": {
+    "map": "贡献农田",
+    "banner": "战利品徽章",
+    "card": "农场主档案",
+    "repo": "仓库收成卡"
+  },
+  "empty": {
+    "title": "等待目标...",
+    "subtitle": "输入用户名查看玩家数据，或输入 owner/repo 查看仓库卡片。"
+  },
+  "loading": {
+    "repo": "正在查询仓库数据...",
+    "user": "正在培育贡献草地..."
+  },
+  "error": {
+    "label": "错误",
+    "network": "网络错误，请重试。",
+    "contributions": "获取贡献数据失败",
+    "repo": "获取仓库信息失败"
+  },
+  "views": {
+    "map": "贡献草地",
+    "banner": "战利品大厅",
+    "card": "玩家护照"
+  },
+  "footer": {
+    "credit": "FarmCraft · 把公开 GitHub 数据种进一座像素农场"
+  },
+  "about": {
+    "projectInfo": "农场手册",
+    "title": "FarmCraft",
+    "description": "沿用 CommitCraft 的 SVG 生成流程，换成温暖的像素农场语汇。",
+    "close": "关闭",
+    "whatIsThis": "这是一个什么项目？",
+    "whatIsThisContent": "FarmCraft 会把 GitHub 用户贡献、仓库信息和统计数据，转换成可预览、可下载、可嵌入的像素农场 SVG。它适合放进 README、个人主页、作品集，或者直接当成分享图使用。",
+    "supportedInputs": "支持哪些输入？",
+    "inputUsername": "GitHub 用户名",
+    "inputUsernameExample": "例：WJZ_P",
+    "inputUsernameDetail": "生成 Contribution Map、Banner Hall 和 Player Passport 三种用户视图。",
+    "inputShort": "仓库短格式",
+    "inputShortExample": "例：vercel/next.js",
+    "inputShortDetail": "直接生成仓库 Repo Card，适合展示项目概览。",
+    "inputUrl": "仓库完整链接",
+    "inputUrlExample": "例：https://github.com/vercel/next.js",
+    "inputUrlDetail": "自动解析 owner/repo，适合直接粘贴 GitHub 页面地址。",
+    "whatCanGenerate": "可以生成什么？",
+    "resultMap": "Contribution Map",
+    "resultMapDetail": "把年度贡献热力图转成二维小草矩阵，提交越活跃，草苗发育越完整。",
+    "resultBanner": "Banner Hall",
+    "resultBannerDetail": "根据 GitHub 统计生成泰拉瑞亚风格的战利品徽章，数值是视觉焦点。",
+    "resultPassport": "Player Passport",
+    "resultPassportDetail": "生成农场主档案卡，可自定义一句个性签名。",
+    "resultRepo": "Repo Card",
+    "resultRepoDetail": "展示仓库名称、描述、语言与热度信息，支持下载农场风格 SVG。",
+    "howToUse": "完整使用方式",
+    "step1": "在输入框中填入 GitHub 用户名、仓库短格式，或完整仓库链接。",
+    "step2_prefix": "点击 ",
+    "step2_craft": "开始锻造",
+    "step2_suffix": "，等待页面生成对应内容。",
+    "step3_prefix": "如果输入的是用户名，可以在 ",
+    "step3_suffix": " 之间切换。",
+    "step4_prefix": "每个视图都支持 ",
+    "step4_download": "下载 .SVG",
+    "step4_suffix": "；同时页面下方提供可复制的 endpoint，便于嵌入 README 或网页。",
+    "step5": "玩家护照支持自定义一句 quote；战利品大厅展示数字徽章；仓库卡片支持直接导出仓库说明 SVG。",
+    "apiUsage": "API / 嵌入用法",
+    "apiMap": "贡献地图",
+    "apiPassport": "玩家护照",
+    "apiBanner": "战利品大厅",
+    "apiRepo": "仓库卡片",
+    "apiStatIdNote_prefix": "其中战利品大厅的 ",
+    "apiStatIdNote_statId": "statId",
+    "apiStatIdNote_suffix": " 会在页面中按每枚徽章分别提供复制入口，不需要手动记忆。",
+    "notes": "补充说明",
+    "note1": "导出结果以 SVG 为主，方便二次编辑、嵌入网页和保持清晰缩放；贴图来自 Kenney CC0 农场扩展。",
+    "note2": "用户模式与仓库模式都直接面向公开 GitHub 数据源。",
+    "note3": "仓库卡片下载已经支持中英文混合内容导出，不会再把中文描述丢掉。"
+  },
+  "components": {
+    "downloadSvg": "下载 .SVG",
+    "download": "下载",
+    "replay": "重播",
+    "reset": "重置",
+    "copy": "复制",
+    "copied": "✔ 已复制",
+    "endpointLabel": "{label} 端点：",
+    "endpointDefault": "API 端点地址：",
+    "contributions": "次贡献",
+    "viewAngle": "视角：",
+    "bannerHint": "悬停查看数值 \u2022 徽章颜色随成长档次变化",
+    "mapHint": "悬停查看详情 \u2022 提交越多，小草发育越好 \u2022 左右滚动查看完整一年",
+    "meadowTitle": "你的年度生长记录",
+    "dayContributions": "次贡献",
+    "growthLegend": "小草发育图例",
+    "meadowRepos": "个公开仓库",
+    "meadowNeighbors": "位关注者",
+    "lootTitle": "统计战利品",
+    "lootIntro": "每枚徽章对应一项 GitHub 收成；颜色代表成长档次，数字代表真实数量。",
+    "lootHint": "战利品徽章只保留数字，不显示字母评级。",
+    "quoteLabel": "签名：",
+    "quotePlaceholder": "输入你的个性签名...",
+    "quoteDefault": "探索无尽的代码方块。",
+    "unknown": "未知",
+    "passportHint": "自定义签名 \u2022 下载或嵌入你的玩家护照",
+    "repoCardLabel": "仓库卡片",
+    "fontError": "FarmCraft 像素字体加载失败！"
+  }
+}

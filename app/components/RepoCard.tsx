@@ -1,0 +1,181 @@
+"use client";
+
+import React, { useMemo, useState, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
+import { generateRepoSvg, type RepoSvgParams } from "@/app/lib/repoSvg";
+import EndpointCopyBox from "./EndpointCopyBox";
+
+interface RepoCardProps {
+  repoData: RepoSvgParams;
+}
+
+export default function RepoCard({ repoData }: RepoCardProps) {
+  const t = useTranslations("components");
+  const [animKey, setAnimKey] = useState(0);
+  const fontCacheRef = useRef<Record<string, opentype.Font>>({});
+
+  const svgHtml = useMemo(() => {
+    return generateRepoSvg(repoData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [repoData, animKey]);
+
+  const handleDownload = useCallback(async () => {
+    const opentype = (await import("opentype.js")).default;
+
+    // 加载本地 Zpix 像素字体（带缓存）
+    const fontUrl = "/fonts/zpix.ttf";
+    if (!fontCacheRef.current[fontUrl]) {
+      const res = await fetch(fontUrl);
+      const buf = await res.arrayBuffer();
+      fontCacheRef.current[fontUrl] = opentype.parse(buf);
+    }
+    const font = fontCacheRef.current[fontUrl];
+
+    // 加载 Zpix 中文像素字体（带缓存）
+    const zpixUrl = "/fonts/zpix.ttf";
+    if (!fontCacheRef.current[zpixUrl]) {
+      const res = await fetch(zpixUrl);
+      const buf = await res.arrayBuffer();
+      fontCacheRef.current[zpixUrl] = opentype.parse(buf);
+    }
+    const zpixFont = fontCacheRef.current[zpixUrl];
+
+    // 克隆 SVG DOM
+    const container = document.createElement("div");
+    container.innerHTML = svgHtml;
+    const svgEl = container.querySelector("svg");
+    if (!svgEl) return;
+
+    // ===== 混合烘焙：ASCII 用 MC path，非 ASCII 用 Zpix path =====
+    const isAscii = (ch: string) => ch.charCodeAt(0) <= 0x7f;
+
+    /** 将一段文本混合烘焙：全部转为 path */
+    const bakeMixed = (
+      text: string, startX: number, yPos: number,
+      fontSize: number, fillColor: string, fontWeightAttr?: string,
+    ): { elements: SVGElement[]; endX: number } => {
+      const elements: SVGElement[] = [];
+      let curX = startX;
+      // 按 ASCII / 非 ASCII 分段
+      const segs: { t: string; ascii: boolean }[] = [];
+      for (const ch of text) {
+        const a = isAscii(ch);
+        if (segs.length > 0 && segs[segs.length - 1].ascii === a) {
+          segs[segs.length - 1].t += ch;
+        } else {
+          segs.push({ t: ch, ascii: a });
+        }
+      }
+      for (const seg of segs) {
+        const activeFont = seg.ascii ? font : zpixFont;
+        const p = activeFont.getPath(seg.t, curX, yPos, fontSize);
+        const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        pathEl.setAttribute("d", p.toPathData(5));
+        pathEl.setAttribute("fill", fillColor);
+        elements.push(pathEl);
+        curX += activeFont.getAdvanceWidth(seg.t, fontSize);
+      }
+      return { elements, endX: curX };
+    };
+
+    // 烘焙所有 <text> 为混合 path + text
+    const texts = Array.from(svgEl.querySelectorAll("text"));
+    for (const t of texts) {
+      const fontSize = parseFloat(t.getAttribute("font-size") || "16");
+      const fill = t.getAttribute("fill") || "#000";
+      const filter = t.getAttribute("filter") || "";
+      const anchor = t.getAttribute("text-anchor") as "start" | "middle" | "end" || "start";
+      const fw = t.getAttribute("font-weight") || "";
+
+      // 处理 tspan 子节点
+      const tspans = t.querySelectorAll("tspan");
+      if (tspans.length > 0) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        if (filter) g.setAttribute("filter", filter);
+
+        const x = parseFloat(t.getAttribute("x") || "0");
+        const y = parseFloat(t.getAttribute("y") || "0");
+        let curX = x;
+
+        for (const ts of Array.from(tspans)) {
+          const text = ts.textContent || "";
+          const tsFill = ts.getAttribute("fill") || fill;
+          const { elements, endX } = bakeMixed(text, curX, y, fontSize, tsFill, fw);
+          elements.forEach(el => g.appendChild(el));
+          curX = endX;
+        }
+        t.replaceWith(g);
+      } else {
+        const text = t.textContent || "";
+        const x = parseFloat(t.getAttribute("x") || "0");
+        const y = parseFloat(t.getAttribute("y") || "0");
+
+        // 计算混合文本总宽度用于 anchor 偏移
+        let totalW = 0;
+        for (const ch of text) {
+          totalW += isAscii(ch) ? font.getAdvanceWidth(ch, fontSize) : fontSize;
+        }
+        let drawX = x;
+        if (anchor === "middle") drawX -= totalW / 2;
+        else if (anchor === "end") drawX -= totalW;
+
+        const { elements } = bakeMixed(text, drawX, y, fontSize, fill, fw);
+
+        if (filter || elements.length > 1) {
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          if (filter) g.setAttribute("filter", filter);
+          elements.forEach(el => g.appendChild(el));
+          t.replaceWith(g);
+        } else if (elements.length === 1) {
+          t.replaceWith(elements[0]);
+        }
+      }
+    }
+
+    // 导出
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgEl);
+    const blob = new Blob([svgStr], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${repoData.owner}-${repoData.repo}-card.svg`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [svgHtml, repoData.owner, repoData.repo]);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const endpointUrl = `${baseUrl}/api/repo/${repoData.owner}/${repoData.repo}.svg`;
+
+  return (
+    <div className="mt-6 flex flex-col items-center w-full">
+      {/* SVG 预览 */}
+      <div
+        key={animKey}
+        className="mc-display w-full flex items-center justify-center p-6"
+        dangerouslySetInnerHTML={{ __html: svgHtml }}
+      />
+
+      {/* 控制栏 */}
+      <div className="mt-4 flex gap-4 items-center flex-wrap justify-center">
+        <button
+          className="mc-btn-secondary text-xs px-4 py-2"
+          onClick={() => setAnimKey((k) => k + 1)}
+        >
+          {t("replay")}
+        </button>
+        <button
+          className="mc-btn-secondary text-xs px-4 py-2"
+          onClick={handleDownload}
+        >
+          {t("download")}
+        </button>
+      </div>
+
+      {/* API 端点 */}
+      <div className="mt-4 w-full">
+        <EndpointCopyBox url={endpointUrl} label={t("repoCardLabel")} />
+      </div>
+    </div>
+  );
+}

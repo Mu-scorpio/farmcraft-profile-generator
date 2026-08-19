@@ -1,0 +1,67 @@
+import { fetchContributions } from "@/app/lib/github";
+import {
+  VALID_STAT_IDS,
+  STAT_TITLES,
+  ICONS,
+  getTier,
+  getStatValue,
+  generateBakedBannerSvg,
+  type StatId,
+} from "@/app/lib/bannerSvg";
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ username: string; statId: string }> },
+) {
+  let { username, statId } = await params;
+
+  if (statId.endsWith(".svg")) {
+    statId = statId.slice(0, -4);
+  }
+
+  if (!VALID_STAT_IDS.includes(statId as StatId)) {
+    return new Response(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="50"><text x="10" y="30" fill="red" font-size="14">Invalid stat: ${statId}. Valid: ${VALID_STAT_IDS.join(", ")}</text></svg>`,
+      { status: 400, headers: { "Content-Type": "image/svg+xml" } },
+    );
+  }
+
+  const url = new URL(request.url);
+  const { searchParams } = url;
+  const token = searchParams.get("token") || process.env["GITHUB_TOKEN"] || "";
+
+  const from = searchParams.get("from") || undefined;
+  const to = searchParams.get("to") || undefined;
+
+  try {
+    const { calendar, stats } = await fetchContributions(username, token, from, to);
+    const sid = statId as StatId;
+    const rawValue = getStatValue(sid, stats, calendar.totalContributions);
+    const tier = getTier(sid, rawValue);
+    const icon = ICONS[sid] || ICONS.commits;
+    const title = STAT_TITLES[sid];
+
+    const svg = await generateBakedBannerSvg({
+      statId: sid,
+      title,
+      value: rawValue,
+      tier,
+      icon,
+    });
+
+    return new Response(svg, {
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=1800",
+      },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const status = message.includes("not found") ? 404 : 500;
+    const escapedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return new Response(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="50"><text x="10" y="30" fill="red" font-size="14">${escapedMsg}</text></svg>`,
+      { status, headers: { "Content-Type": "image/svg+xml" } },
+    );
+  }
+}

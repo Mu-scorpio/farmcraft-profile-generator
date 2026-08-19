@@ -1,0 +1,333 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import WeatherCanvas from "./components/WeatherCanvas";
+import ContributionMap from "./components/ContributionMap";
+import BannerHall from "./components/BannerHall";
+import ProfileCardView from "./components/ProfileCard";
+import RepoCard from "./components/RepoCard";
+import type { ContributionCalendar, UserStats } from "./lib/github";
+import type { RepoSvgParams } from "./lib/repoSvg";
+import { DEMO_AVATAR, DEMO_CALENDAR, DEMO_STATS, DEMO_USERNAME, getDemoCalendar, getFallbackAvatar } from "./lib/demoData";
+import { FARM_ASSETS } from "./lib/themeAssets";
+
+function parseInput(input: string):
+  | { type: "repo"; owner: string; repo: string }
+  | { type: "user"; username: string }
+  | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const urlMatch = trimmed.match(/github\.com\/([^/]+)\/([^/\s?#]+)/i);
+  if (urlMatch) return { type: "repo", owner: urlMatch[1], repo: urlMatch[2].replace(/\.git$/, "") };
+
+  const slashMatch = trimmed.match(/^([^/\s]+)\/([^/\s]+)$/);
+  if (slashMatch) return { type: "repo", owner: slashMatch[1], repo: slashMatch[2] };
+
+  return { type: "user", username: trimmed.replace(/^@/, "") };
+}
+
+type ActiveView = "map" | "banner" | "card";
+
+export default function Home() {
+  const t = useTranslations();
+  const locale = useLocale();
+  const [input, setInput] = useState(DEMO_USERNAME);
+  const [displayUsername, setDisplayUsername] = useState(DEMO_USERNAME);
+  const [loading, setLoading] = useState(false);
+  const [calendarData, setCalendarData] = useState<ContributionCalendar | null>(DEMO_CALENDAR);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(DEMO_AVATAR);
+  const [userStats, setUserStats] = useState<UserStats | null>(DEMO_STATS);
+  const [repoData, setRepoData] = useState<RepoSvgParams | null>(null);
+  const [resultMode, setResultMode] = useState<"user" | "repo" | null>("user");
+  const [activeView, setActiveView] = useState<ActiveView>("map");
+  const [error, setError] = useState<string | null>(null);
+  const [weather, setWeather] = useState<"clear" | "rain" | "snow">("rain");
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const mouseRef = useRef({ x: 0, y: 0 });
+  const bgRef = useRef<HTMLDivElement>(null);
+
+  const viewKeys: ActiveView[] = ["map", "banner", "card"];
+  const viewLabels: Record<ActiveView, string> = {
+    map: t("views.map"),
+    banner: t("views.banner"),
+    card: t("views.card"),
+  };
+
+  const handleMouseMove = useCallback((event: MouseEvent) => {
+    const x = (event.clientX / window.innerWidth - 0.5) * 2;
+    const y = (event.clientY / window.innerHeight - 0.5) * 2;
+    bgRef.current?.style.setProperty("--mouse-x", x.toString());
+    bgRef.current?.style.setProperty("--mouse-y", y.toString());
+    mouseRef.current = { x, y };
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [handleMouseMove]);
+
+  useEffect(() => {
+    if (!isAboutOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsAboutOpen(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAboutOpen]);
+
+  const showDemo = useCallback(() => {
+    setInput(DEMO_USERNAME);
+    setDisplayUsername(DEMO_USERNAME);
+    setCalendarData(getDemoCalendar());
+    setAvatarUrl(DEMO_AVATAR);
+    setUserStats(DEMO_STATS);
+    setRepoData(null);
+    setResultMode("user");
+    setActiveView("map");
+    setError(null);
+  }, []);
+
+  async function handleGenerate() {
+    const parsed = parseInput(input);
+    if (!parsed) return;
+
+    setLoading(true);
+    setError(null);
+    setCalendarData(null);
+    setAvatarUrl(null);
+    setUserStats(null);
+    setRepoData(null);
+    setResultMode(null);
+
+    try {
+      if (parsed.type === "user") {
+        const response = await fetch(`/api/contributions/${encodeURIComponent(parsed.username)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || t("error.contributions"));
+        setCalendarData(data as ContributionCalendar);
+        setAvatarUrl(data.avatarUrl || getFallbackAvatar(parsed.username));
+        setUserStats(data.stats || DEMO_STATS);
+        setDisplayUsername(parsed.username);
+        setResultMode("user");
+        setActiveView("map");
+      } else {
+        const response = await fetch(`/api/repoinfo/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || t("error.repo"));
+        setRepoData(data as RepoSvgParams);
+        setResultMode("repo");
+      }
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : t("error.network"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const switchView = (direction: number) => {
+    const index = viewKeys.indexOf(activeView);
+    setActiveView(viewKeys[(index + direction + viewKeys.length) % viewKeys.length]);
+  };
+
+  const toggleLocale = () => {
+    const next = locale === "zh" ? "en" : "zh";
+    document.cookie = `locale=${next};path=/;max-age=31536000`;
+    window.location.reload();
+  };
+
+  return (
+    <div className={`farm-page selection:bg-[#e5ad4b] selection:text-[#2e241d] ${weather === "clear" ? "is-clear" : "is-rain"}`}>
+      <div ref={bgRef} className="farm-background" />
+      <div className="farm-vignette" />
+      <WeatherCanvas weather={weather} mouseRef={mouseRef} />
+
+      <nav className="farm-navbar flex items-center justify-between gap-4 px-5 py-3">
+        <div className="relative z-10 flex min-w-0 items-center justify-between gap-4 w-full">
+          <div className="farm-nav-left">
+            <button
+              type="button"
+              className={`weather-toggle weather-toggle-${weather}`}
+              onClick={() => setWeather((current) => current === "rain" ? "clear" : "rain")}
+              aria-pressed={weather === "clear"}
+              aria-label={weather === "rain" ? t("nav.weatherClear") : t("nav.weatherRain")}
+            >
+              <span className="weather-toggle-swatch" aria-hidden="true" />
+              <span>{weather === "rain" ? t("nav.weatherRain") : t("nav.weatherClear")}</span>
+            </button>
+            <a className="farm-brand" href="https://github.com/WJZ-P/CommitCraft" target="_blank" rel="noreferrer">
+              <img className="farm-brand-icon" src={FARM_ASSETS.pumpkin} alt="FarmCraft" />
+              <h1 className="farm-brand-title"><span>Farm</span>Craft</h1>
+            </a>
+          </div>
+          <div className="farm-nav-actions">
+            <button type="button" className="mc-btn-secondary text-xs" onClick={toggleLocale}>
+              {locale === "zh" ? "EN" : "中文"}
+            </button>
+            <button type="button" className="mc-btn-secondary text-xs" onClick={() => setIsAboutOpen(true)} aria-haspopup="dialog" aria-expanded={isAboutOpen}>
+              {t("nav.about")}
+            </button>
+            <a className="mc-nav-link text-xs" href="https://github.com/WJZ-P/CommitCraft" target="_blank" rel="noreferrer">
+              GitHub
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <main className="relative z-20 flex min-h-[calc(100vh-134px)] w-full items-start justify-center">
+        <section className="farm-hero">
+          <div className="farm-hero-copy">
+            <p className="farm-kicker">FARMCRAFT · PIXEL PROFILE FORGE</p>
+            <h2 className="farm-hero-title">{t("hero.title")}</h2>
+            <p className="farm-hero-subtitle">{t("hero.subtitle")}</p>
+          </div>
+
+          <div className="mc-gui">
+            <div className="mc-gui-inner">
+              <label className="farm-input-label" htmlFor="github-target">{t("input.label")}</label>
+              <div className="farm-input-row">
+                <div className="mc-input-sunken">
+                  <input
+                    id="github-target"
+                    type="text"
+                    value={input}
+                    placeholder={t("input.placeholder")}
+                    onChange={(event) => setInput(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === "Enter") void handleGenerate(); }}
+                    spellCheck={false}
+                    aria-label={t("input.label")}
+                  />
+                </div>
+                <button type="button" className="mc-btn min-h-14 px-7 text-base" onClick={() => void handleGenerate()} disabled={loading || !input.trim()}>
+                  {loading ? t("input.mining") : t("input.craft")}
+                </button>
+              </div>
+              <p className="farm-input-hint">{t("input.hint")}</p>
+              <div className="farm-demo-bar">
+                <span>{t("input.demoHint")} <span className="farm-demo-chip">{DEMO_USERNAME}</span></span>
+                <button type="button" className="mc-btn-secondary text-xs" onClick={showDemo}>{t("input.demoAction")}</button>
+              </div>
+
+              {resultMode === "user" && calendarData && !loading && !error && (
+                <div className="mc-view-switcher mt-6 mb-2">
+                  <button type="button" className="mc-btn-secondary text-sm px-4 py-2" onClick={() => switchView(-1)} aria-label="Previous view">&lt;</button>
+                  <div className="mc-view-label">{viewLabels[activeView]}</div>
+                  <button type="button" className="mc-btn-secondary text-sm px-4 py-2" onClick={() => switchView(1)} aria-label="Next view">&gt;</button>
+                </div>
+              )}
+
+              {(!resultMode || loading || error) && (
+                <div className="mc-display mt-6">
+                  {!loading && !error && !resultMode && (
+                    <div className="text-center text-[#d6e0c8] mc-text-shadow-light">
+                      <p className="mb-2">{t("empty.title")}</p>
+                      <p className="text-sm">{t("empty.subtitle")}</p>
+                    </div>
+                  )}
+                  {loading && (
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <div className="flex gap-2">
+                        {[FARM_ASSETS.sprouts, FARM_ASSETS.sunflower, FARM_ASSETS.pumpkin].map((asset, index) => (
+                          <img key={asset} src={asset} alt="" className="mc-pixel-icon h-8 w-8 animate-bounce" style={{ animationDelay: `${index * 0.14}s`, animationFillMode: "both" }} />
+                        ))}
+                      </div>
+                      <p className="text-[#e5ad4b] animate-pulse mc-text-shadow">{parsedLoadingLabel(parseInput(input)?.type, t)}</p>
+                    </div>
+                  )}
+                  {error && (
+                    <div className="text-center text-[#f1a08b] mc-text-shadow-error">
+                      <p className="mb-1 text-lg">{t("error.label")}</p>
+                      <p className="text-sm">{error}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {resultMode === "user" && calendarData && !loading && activeView === "map" && (
+                <ContributionMap calendar={calendarData} username={displayUsername} avatarUrl={avatarUrl} stats={userStats} />
+              )}
+              {resultMode === "user" && calendarData && !loading && activeView === "banner" && userStats && (
+                <BannerHall stats={userStats} totalContributions={calendarData.totalContributions} username={displayUsername} />
+              )}
+              {resultMode === "user" && calendarData && !loading && activeView === "card" && userStats && avatarUrl && (
+                <ProfileCardView stats={userStats} totalContributions={calendarData.totalContributions} username={displayUsername} avatarUrl={avatarUrl} />
+              )}
+              {resultMode === "repo" && repoData && !loading && !error && <RepoCard repoData={repoData} />}
+
+              <div className="farm-recipe-strip">
+                <div className="farm-recipe-card"><img src={FARM_ASSETS.sprouts} alt="" /><span>{t("recipe.map")}</span></div>
+                <div className="farm-recipe-card"><img src={FARM_ASSETS.sunflower} alt="" /><span>{t("recipe.banner")}</span></div>
+                <div className="farm-recipe-card"><img src={FARM_ASSETS.pumpkin} alt="" /><span>{t("recipe.card")}</span></div>
+                <div className="farm-recipe-card"><img src={FARM_ASSETS.greenhouse} alt="" /><span>{t("recipe.repo")}</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {isAboutOpen && (
+        <div className="mc-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center px-4 py-4" role="presentation" onClick={() => setIsAboutOpen(false)}>
+          <div className="mc-gui mc-modal-shell w-full max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="about-modal-title" onClick={(event) => event.stopPropagation()}>
+            <div className="mc-gui-inner max-h-[88vh] overflow-y-auto">
+              <div className="mb-5 flex items-start justify-between gap-4 border-b-2 border-[#a77a50] pb-4">
+                <div>
+                  <p className="mb-1 text-xs tracking-widest text-[#775840]">{t("about.projectInfo")}</p>
+                  <h3 id="about-modal-title" className="text-2xl text-[#2e241d] mc-text-shadow-white">{t("about.title")}</h3>
+                  <p className="mc-cjk-text mt-2 text-sm font-semibold text-[#775840]">{t("about.description")}</p>
+                </div>
+                <button type="button" className="mc-btn-secondary shrink-0 text-xs" onClick={() => setIsAboutOpen(false)}>{t("about.close")}</button>
+              </div>
+              <section className="mc-about-section p-4">
+                <h4 className="farm-section-heading">{t("about.whatIsThis")}</h4>
+                <p className="text-sm leading-7">{t("about.whatIsThisContent")}</p>
+              </section>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <section className="mc-about-section p-4">
+                  <h4 className="farm-section-heading">{t("about.supportedInputs")}</h4>
+                  <ul className="space-y-3 text-sm">
+                    <li><p className="font-bold text-[#28533d]">{t("about.inputUsername")}</p><p className="mc-about-code mt-1 text-xs">{t("about.inputUsernameExample")}</p><p className="mt-1 leading-6">{t("about.inputUsernameDetail")}</p></li>
+                    <li><p className="font-bold text-[#28533d]">{t("about.inputShort")}</p><p className="mc-about-code mt-1 text-xs">{t("about.inputShortExample")}</p><p className="mt-1 leading-6">{t("about.inputShortDetail")}</p></li>
+                    <li><p className="font-bold text-[#28533d]">{t("about.inputUrl")}</p><p className="mc-about-code mt-1 text-xs">{t("about.inputUrlExample")}</p><p className="mt-1 leading-6">{t("about.inputUrlDetail")}</p></li>
+                  </ul>
+                </section>
+                <section className="mc-about-section p-4">
+                  <h4 className="farm-section-heading">{t("about.whatCanGenerate")}</h4>
+                  <ul className="space-y-3 text-sm">
+                    <li><p className="font-bold text-[#28533d]">{t("about.resultMap")}</p><p className="mt-1 leading-6">{t("about.resultMapDetail")}</p></li>
+                    <li><p className="font-bold text-[#28533d]">{t("about.resultBanner")}</p><p className="mt-1 leading-6">{t("about.resultBannerDetail")}</p></li>
+                    <li><p className="font-bold text-[#28533d]">{t("about.resultPassport")}</p><p className="mt-1 leading-6">{t("about.resultPassportDetail")}</p></li>
+                    <li><p className="font-bold text-[#28533d]">{t("about.resultRepo")}</p><p className="mt-1 leading-6">{t("about.resultRepoDetail")}</p></li>
+                  </ul>
+                </section>
+              </div>
+              <section className="mc-about-section mt-4 p-4">
+                <h4 className="farm-section-heading">{t("about.howToUse")}</h4>
+                <ol className="space-y-2 text-sm leading-7">
+                  <li>1. {t("about.step1")}</li>
+                  <li>2. {t("about.step2_prefix")}<span className="mc-about-code">{t("about.step2_craft")}</span>{t("about.step2_suffix")}</li>
+                  <li>3. {t("about.step3_prefix")}<span className="mc-about-code">{t("views.map")}</span>、<span className="mc-about-code">{t("views.banner")}</span>、<span className="mc-about-code">{t("views.card")}</span>{t("about.step3_suffix")}</li>
+                  <li>4. {t("about.step4_prefix")}<span className="mc-about-code">{t("about.step4_download")}</span>{t("about.step4_suffix")}</li>
+                </ol>
+              </section>
+              <p className="mt-4 text-xs leading-6 text-[#775840]">{t("about.notes")}: {t("about.note1")}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="farm-footer flex items-center justify-center px-4 py-4">
+        <p className="farm-footer-copy">{t("footer.credit")} · <a href="https://kenney.nl/assets/pixel-platformer-farm-expansion" target="_blank" rel="noreferrer">Kenney CC0 farm tiles</a></p>
+      </footer>
+    </div>
+  );
+}
+
+function parsedLoadingLabel(type: "repo" | "user" | undefined, t: ReturnType<typeof useTranslations>): string {
+  return type === "repo" ? t("loading.repo") : t("loading.user");
+}
