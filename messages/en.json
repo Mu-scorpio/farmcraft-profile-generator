@@ -7,7 +7,7 @@
     "github": "GITHUB"
   },
   "hero": {
-    "title": "Grow Your Commits",
+    "title": "Track Your Commits",
     "subtitle": "TURN EVERY GITHUB CONTRIBUTION INTO A PIXEL FARM"
   },
   "input": {
@@ -23,11 +23,13 @@
     "map": "CONTRIBUTION PLOTS",
     "banner": "LOOT BADGES",
     "card": "FARMER PASSPORT",
-    "repo": "REPO HARVEST"
+    "repo": "REPO CARD GENERATOR"
   },
   "empty": {
     "title": "Awaiting target...",
-    "subtitle": "Enter a username for player stats, or owner/repo for a repository card."
+    "subtitle": "Enter a username for player stats, or owner/repo for a repository card.",
+    "repoTitle": "Ready to grow a repo card...",
+    "repoSubtitle": "Enter owner/repo or a full GitHub repository URL, then press PLANT."
   },
   "loading": {
     "repo": "Querying Repository Data...",
@@ -42,7 +44,8 @@
   "views": {
     "map": "Contribution Meadow",
     "banner": "Loot Hall",
-    "card": "Player Passport"
+    "card": "Player Passport",
+    "repo": "Repo Card Generator"
   },
   "footer": {
     "credit": "FarmCraft · Planting public GitHub data in a pixel farm"
@@ -66,7 +69,7 @@
     "inputUrlDetail": "Auto-parses owner/repo, handy for pasting GitHub page URLs.",
     "whatCanGenerate": "What can it generate?",
     "resultMap": "Contribution Map",
-    "resultMapDetail": "Turns the annual contribution heatmap into a 2D grass matrix where active days grow taller, fuller sprouts.",
+    "resultMapDetail": "Turns the annual contribution heatmap into a 2D solid-color grass matrix where darker plots mean more activity.",
     "resultBanner": "Banner Hall",
     "resultBannerDetail": "Turns GitHub stats into Terraria-like loot badges with the number as the hero.",
     "resultPassport": "Player Passport",
@@ -109,10 +112,10 @@
     "contributions": "contributions",
     "viewAngle": "VIEW ANGLE:",
     "bannerHint": "Hover to inspect values \u2022 Badge colors follow growth bands",
-    "mapHint": "Hover to inspect \u2022 More commits grow fuller grass \u2022 Scroll sideways for the full year",
+    "mapHint": "Hover to inspect \u2022 Darker colors mean more activity \u2022 Scroll sideways for the full year",
     "meadowTitle": "Your yearly growth record",
     "dayContributions": "contributions",
-    "growthLegend": "Grass growth legend",
+    "growthLegend": "Contribution activity legend",
     "meadowRepos": "public repos",
     "meadowNeighbors": "followers",
     "lootTitle": "Stat Loot",
@@ -124,6 +127,44 @@
     "unknown": "Unknown",
     "passportHint": "Customize your quote \u2022 Download or embed your Player Passport",
     "repoCardLabel": "Repo Card",
-    "fontError": "Failed to load the FarmCraft pixel font!"
+    "fontError": "Failed to load the FarmCraft pixel font!",
+    "repoEditor": {
+      "title": "Repo Card Editor",
+      "subtitle": "Pick the badge and stat icons, then tune type and placement. Preview updates live.",
+      "reset": "RESET LAYOUT",
+      "heroBadge": "LEFT BADGE",
+      "heroChest": "CHEST",
+      "heroController": "CONTROLLER",
+      "heroGears": "GEARS",
+      "heroBrain": "CORE",
+      "statIcons": "FOUR STAT ICONS",
+      "statStars": "Stars",
+      "statForks": "Forks",
+      "statLanguage": "Language",
+      "statStatus": "Status",
+      "iconStar": "Star",
+      "iconFork": "Fork",
+      "iconOrb": "Orb",
+      "iconTag": "Tag",
+      "iconGears": "Gears",
+      "iconChest": "Chest",
+      "typography": "TYPE",
+      "ribbonSize": "Ribbon title",
+      "titleSize": "Repo title",
+      "descriptionSize": "Description",
+      "statsLabelSize": "Stat labels",
+      "statsValueSize": "Stat values",
+      "iconSize": "Icon size",
+      "position": "POSITION",
+      "ribbonX": "Ribbon X",
+      "ribbonY": "Ribbon Y",
+      "titleX": "Repo title X",
+      "titleY": "Repo title Y",
+      "descriptionX": "Description X",
+      "descriptionY": "Description Y",
+      "statsX": "Stats area X",
+      "statsY": "Stats area Y",
+      "preview": "LIVE PREVIEW"
+    }
   }
 }

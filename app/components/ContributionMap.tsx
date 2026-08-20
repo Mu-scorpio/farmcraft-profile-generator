@@ -85,39 +85,30 @@ export default function ContributionMap({ calendar, username, avatarUrl, stats }
         </div>
       </div>
 
-      <div className="meadow-grid-frame">
-        <div className="meadow-grid-scroll" role="grid" aria-label={t("mapHint")}>
-          <div
-            className="meadow-grid"
-            style={{
-              gridTemplateColumns: `repeat(${calendar.weeks.length}, 24px)`,
-              gridTemplateRows: "repeat(7, 28px)",
-            }}
-          >
-            {calendar.weeks.map((week, weekIndex) => week.contributionDays.map((day) => {
-              const level = contributionLevel(day);
-              return (
-                <button
-                  type="button"
-                  key={day.date}
-                  className={`grass-cell grass-level-${level}`}
-                  role="gridcell"
-                  aria-label={formatDay(day)}
-                  title={formatDay(day)}
-                  onMouseEnter={() => setSelectedDay(day)}
-                  onFocus={() => setSelectedDay(day)}
-                  style={{ animationDelay: `${(weekIndex % 9) * 20}ms` }}
-                >
-                  <span className="grass-plot" aria-hidden="true">
-                    <span className="grass-stem" />
-                    {Array.from({ length: Math.max(0, level) }).map((_, leafIndex) => (
-                      <span key={leafIndex} className={`grass-leaf grass-leaf-${leafIndex % 4}`} />
-                    ))}
-                    {level === 4 && <span className="grass-bloom" />}
-                  </span>
-                </button>
-              );
-            }))}
+      <div className="meadow-farm-frame">
+        <img className="meadow-border-art" src="/assets/farm/meadow-border.png" alt="" aria-hidden="true" />
+        <div className="meadow-field-window">
+          <div className="meadow-grid-scroll" role="grid" aria-label={t("mapHint")}>
+            <div className="meadow-grid">
+              {calendar.weeks.map((week, weekIndex) => week.contributionDays.map((day) => {
+                const level = contributionLevel(day);
+                return (
+                  <button
+                    type="button"
+                    key={day.date}
+                    className={`grass-cell grass-level-${level}`}
+                    role="gridcell"
+                    aria-label={formatDay(day)}
+                    title={formatDay(day)}
+                    onMouseEnter={() => setSelectedDay(day)}
+                    onFocus={() => setSelectedDay(day)}
+                    style={{ animationDelay: `${(weekIndex % 9) * 20}ms` }}
+                  >
+                    <span className="grass-plot" aria-hidden="true" />
+                  </button>
+                );
+              }))}
+            </div>
           </div>
         </div>
       </div>

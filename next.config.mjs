@@ -43,7 +43,6 @@ const nextConfig = {
         removeConsole: process.env.NODE_ENV === "production" ? {exclude: ["error", "warn"]} : false,
     },
     env: {
-        GITHUB_TOKEN: process.env.GITHUB_TOKEN || "",
         HTTPS_PROXY: process.env.HTTPS_PROXY || "",
     },
 };

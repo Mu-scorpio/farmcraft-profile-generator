@@ -7,7 +7,7 @@
     "github": "GitHub"
   },
   "hero": {
-    "title": "种下你的提交",
+    "title": "追踪你的提交",
     "subtitle": "把 GitHub 的每一次贡献，长成一座像素农场"
   },
   "input": {
@@ -23,11 +23,13 @@
     "map": "贡献农田",
     "banner": "战利品徽章",
     "card": "农场主档案",
-    "repo": "仓库收成卡"
+    "repo": "仓库卡片生成器"
   },
   "empty": {
     "title": "等待目标...",
-    "subtitle": "输入用户名查看玩家数据，或输入 owner/repo 查看仓库卡片。"
+    "subtitle": "输入用户名查看玩家数据，或输入 owner/repo 查看仓库卡片。",
+    "repoTitle": "准备生成仓库卡片...",
+    "repoSubtitle": "输入 owner/repo 或完整 GitHub 仓库链接，然后点击开始种植。"
   },
   "loading": {
     "repo": "正在查询仓库数据...",
@@ -42,7 +44,8 @@
   "views": {
     "map": "贡献草地",
     "banner": "战利品大厅",
-    "card": "玩家护照"
+    "card": "玩家护照",
+    "repo": "仓库卡片生成器"
   },
   "footer": {
     "credit": "FarmCraft · 把公开 GitHub 数据种进一座像素农场"
@@ -66,7 +69,7 @@
     "inputUrlDetail": "自动解析 owner/repo，适合直接粘贴 GitHub 页面地址。",
     "whatCanGenerate": "可以生成什么？",
     "resultMap": "Contribution Map",
-    "resultMapDetail": "把年度贡献热力图转成二维小草矩阵，提交越活跃，草苗发育越完整。",
+    "resultMapDetail": "把年度贡献热力图转成二维纯色小草矩阵，颜色越深，提交越活跃。",
     "resultBanner": "Banner Hall",
     "resultBannerDetail": "根据 GitHub 统计生成泰拉瑞亚风格的战利品徽章，数值是视觉焦点。",
     "resultPassport": "Player Passport",
@@ -109,10 +112,10 @@
     "contributions": "次贡献",
     "viewAngle": "视角：",
     "bannerHint": "悬停查看数值 \u2022 徽章颜色随成长档次变化",
-    "mapHint": "悬停查看详情 \u2022 提交越多，小草发育越好 \u2022 左右滚动查看完整一年",
+    "mapHint": "悬停查看详情 \u2022 颜色越深，提交越活跃 \u2022 左右滚动查看完整一年",
     "meadowTitle": "你的年度生长记录",
     "dayContributions": "次贡献",
-    "growthLegend": "小草发育图例",
+    "growthLegend": "贡献活跃度图例",
     "meadowRepos": "个公开仓库",
     "meadowNeighbors": "位关注者",
     "lootTitle": "统计战利品",
@@ -124,6 +127,44 @@
     "unknown": "未知",
     "passportHint": "自定义签名 \u2022 下载或嵌入你的玩家护照",
     "repoCardLabel": "仓库卡片",
-    "fontError": "FarmCraft 像素字体加载失败！"
+    "fontError": "FarmCraft 像素字体加载失败！",
+    "repoEditor": {
+      "title": "仓库卡片编辑器",
+      "subtitle": "挑选徽章与数据图标，再微调字号和位置。预览会即时更新。",
+      "reset": "重置布局",
+      "heroBadge": "左侧徽章",
+      "heroChest": "宝箱",
+      "heroController": "手柄",
+      "heroGears": "齿轮",
+      "heroBrain": "核心",
+      "statIcons": "四项数据图标",
+      "statStars": "Stars",
+      "statForks": "Forks",
+      "statLanguage": "Language",
+      "statStatus": "Status",
+      "iconStar": "星星",
+      "iconFork": "分支",
+      "iconOrb": "能量球",
+      "iconTag": "标签",
+      "iconGears": "齿轮",
+      "iconChest": "宝箱",
+      "typography": "字号",
+      "ribbonSize": "顶部标题",
+      "titleSize": "仓库标题",
+      "descriptionSize": "仓库描述",
+      "statsLabelSize": "数据标签",
+      "statsValueSize": "数据数值",
+      "iconSize": "图标尺寸",
+      "position": "位置",
+      "ribbonX": "顶部标题 X",
+      "ribbonY": "顶部标题 Y",
+      "titleX": "仓库标题 X",
+      "titleY": "仓库标题 Y",
+      "descriptionX": "描述 X",
+      "descriptionY": "描述 Y",
+      "statsX": "数据区域 X",
+      "statsY": "数据区域 Y",
+      "preview": "实时预览"
+    }
   }
 }

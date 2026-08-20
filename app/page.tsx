@@ -12,6 +12,8 @@ import type { RepoSvgParams } from "./lib/repoSvg";
 import { DEMO_AVATAR, DEMO_CALENDAR, DEMO_STATS, DEMO_USERNAME, getDemoCalendar, getFallbackAvatar } from "./lib/demoData";
 import { FARM_ASSETS } from "./lib/themeAssets";
 
+const PROJECT_REPO_URL = "https://github.com/Mu-scorpio/farmcraft-profile-generator";
+
 function parseInput(input: string):
   | { type: "repo"; owner: string; repo: string }
   | { type: "user"; username: string }
@@ -28,7 +30,7 @@ function parseInput(input: string):
   return { type: "user", username: trimmed.replace(/^@/, "") };
 }
 
-type ActiveView = "map" | "banner" | "card";
+type ActiveView = "map" | "banner" | "card" | "repo";
 
 export default function Home() {
   const t = useTranslations();
@@ -43,16 +45,23 @@ export default function Home() {
   const [resultMode, setResultMode] = useState<"user" | "repo" | null>("user");
   const [activeView, setActiveView] = useState<ActiveView>("map");
   const [error, setError] = useState<string | null>(null);
-  const [weather, setWeather] = useState<"clear" | "rain" | "snow">("rain");
+  const [weather, setWeather] = useState<"clear" | "rain" | "snow">("clear");
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const mouseRef = useRef({ x: 0, y: 0 });
   const bgRef = useRef<HTMLDivElement>(null);
 
-  const viewKeys: ActiveView[] = ["map", "banner", "card"];
+  const viewKeys: ActiveView[] = ["map", "banner", "card", "repo"];
   const viewLabels: Record<ActiveView, string> = {
     map: t("views.map"),
     banner: t("views.banner"),
     card: t("views.card"),
+    repo: t("views.repo"),
+  };
+  const viewAssets: Record<ActiveView, string> = {
+    map: FARM_ASSETS.sprouts,
+    banner: FARM_ASSETS.sunflower,
+    card: FARM_ASSETS.pumpkin,
+    repo: FARM_ASSETS.greenhouse,
   };
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
@@ -123,6 +132,7 @@ export default function Home() {
         if (!response.ok) throw new Error(data.error || t("error.repo"));
         setRepoData(data as RepoSvgParams);
         setResultMode("repo");
+        setActiveView("repo");
       }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("error.network"));
@@ -131,9 +141,19 @@ export default function Home() {
     }
   }
 
-  const switchView = (direction: number) => {
-    const index = viewKeys.indexOf(activeView);
-    setActiveView(viewKeys[(index + direction + viewKeys.length) % viewKeys.length]);
+  const selectView = (view: ActiveView) => {
+    if (view === "repo") {
+      setActiveView("repo");
+      setResultMode("repo");
+      setRepoData(null);
+      setError(null);
+      return;
+    }
+
+    if (resultMode !== "user" || !calendarData) {
+      showDemo();
+    }
+    setActiveView(view);
   };
 
   const toggleLocale = () => {
@@ -151,6 +171,10 @@ export default function Home() {
       <nav className="farm-navbar flex items-center justify-between gap-4 px-5 py-3">
         <div className="relative z-10 flex min-w-0 items-center justify-between gap-4 w-full">
           <div className="farm-nav-left">
+            <a className="farm-brand" href={PROJECT_REPO_URL} target="_blank" rel="noreferrer">
+              <img className="farm-brand-icon" src={FARM_ASSETS.pumpkin} alt="FarmCraft" />
+              <h1 className="farm-brand-title"><span>Farm</span>Craft</h1>
+            </a>
             <button
               type="button"
               className={`weather-toggle weather-toggle-${weather}`}
@@ -161,10 +185,6 @@ export default function Home() {
               <span className="weather-toggle-swatch" aria-hidden="true" />
               <span>{weather === "rain" ? t("nav.weatherRain") : t("nav.weatherClear")}</span>
             </button>
-            <a className="farm-brand" href="https://github.com/WJZ-P/CommitCraft" target="_blank" rel="noreferrer">
-              <img className="farm-brand-icon" src={FARM_ASSETS.pumpkin} alt="FarmCraft" />
-              <h1 className="farm-brand-title"><span>Farm</span>Craft</h1>
-            </a>
           </div>
           <div className="farm-nav-actions">
             <button type="button" className="mc-btn-secondary text-xs" onClick={toggleLocale}>
@@ -173,7 +193,7 @@ export default function Home() {
             <button type="button" className="mc-btn-secondary text-xs" onClick={() => setIsAboutOpen(true)} aria-haspopup="dialog" aria-expanded={isAboutOpen}>
               {t("nav.about")}
             </button>
-            <a className="mc-nav-link text-xs" href="https://github.com/WJZ-P/CommitCraft" target="_blank" rel="noreferrer">
+            <a className="mc-nav-link text-xs" href={PROJECT_REPO_URL} target="_blank" rel="noreferrer">
               GitHub
             </a>
           </div>
@@ -214,12 +234,22 @@ export default function Home() {
                 <button type="button" className="mc-btn-secondary text-xs" onClick={showDemo}>{t("input.demoAction")}</button>
               </div>
 
-              {resultMode === "user" && calendarData && !loading && !error && (
-                <div className="mc-view-switcher mt-6 mb-2">
-                  <button type="button" className="mc-btn-secondary text-sm px-4 py-2" onClick={() => switchView(-1)} aria-label="Previous view">&lt;</button>
-                  <div className="mc-view-label">{viewLabels[activeView]}</div>
-                  <button type="button" className="mc-btn-secondary text-sm px-4 py-2" onClick={() => switchView(1)} aria-label="Next view">&gt;</button>
-                </div>
+              {!loading && !error && (resultMode === "user" || resultMode === "repo") && (
+                <nav className="mc-generator-tabs mt-6 mb-2" aria-label="Generators" role="tablist">
+                  {viewKeys.map((view) => (
+                    <button
+                      key={view}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeView === view}
+                      className={`mc-generator-tab ${activeView === view ? "is-active" : ""}`}
+                      onClick={() => selectView(view)}
+                    >
+                      <img src={viewAssets[view]} alt="" aria-hidden="true" />
+                      <span>{viewLabels[view]}</span>
+                    </button>
+                  ))}
+                </nav>
               )}
 
               {(!resultMode || loading || error) && (
@@ -259,13 +289,12 @@ export default function Home() {
                 <ProfileCardView stats={userStats} totalContributions={calendarData.totalContributions} username={displayUsername} avatarUrl={avatarUrl} />
               )}
               {resultMode === "repo" && repoData && !loading && !error && <RepoCard repoData={repoData} />}
-
-              <div className="farm-recipe-strip">
-                <div className="farm-recipe-card"><img src={FARM_ASSETS.sprouts} alt="" /><span>{t("recipe.map")}</span></div>
-                <div className="farm-recipe-card"><img src={FARM_ASSETS.sunflower} alt="" /><span>{t("recipe.banner")}</span></div>
-                <div className="farm-recipe-card"><img src={FARM_ASSETS.pumpkin} alt="" /><span>{t("recipe.card")}</span></div>
-                <div className="farm-recipe-card"><img src={FARM_ASSETS.greenhouse} alt="" /><span>{t("recipe.repo")}</span></div>
-              </div>
+              {resultMode === "repo" && !repoData && !loading && !error && (
+                <div className="mc-display mt-6 text-center">
+                  <p className="mb-2 text-[#e5ad4b] mc-text-shadow">{t("empty.repoTitle")}</p>
+                  <p className="text-sm text-[#d6e0c8] mc-text-shadow-light">{t("empty.repoSubtitle")}</p>
+                </div>
+              )}
             </div>
           </div>
         </section>

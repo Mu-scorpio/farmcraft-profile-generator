@@ -1,5 +1,8 @@
 import { fetchRepoInfo } from "@/app/lib/github";
 import { generateBakedRepoSvg, escapeXml } from "@/app/lib/repoSvg";
+import { loadRepoCardAssetUris } from "@/app/lib/repoCardAssetData";
+
+export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
@@ -17,7 +20,8 @@ export async function GET(
 
   try {
     const repoInfo = await fetchRepoInfo(owner, repo, token);
-    const svg = await generateBakedRepoSvg(repoInfo);
+    const assetUris = await loadRepoCardAssetUris();
+    const svg = await generateBakedRepoSvg(repoInfo, assetUris);
 
     return new Response(svg, {
       headers: {

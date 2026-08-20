@@ -12,6 +12,38 @@ export const FARM_ASSETS = {
   greenhouse: "/assets/farm/sprites/greenhouse.png",
 } as const;
 
+/**
+ * User-provided repository card artwork. The source files are kept under
+ * /assets for editing, while the same named files are copied to public for
+ * browser previews and SVG generation.
+ */
+export const REPO_CARD_ASSETS = {
+  frame: "/assets/repo-card/repo-card-frame.png",
+  hero: "/assets/repo-card/repo-card-hero-chest.png",
+  iconStar: "/assets/repo-card/repo-card-icon-star.png",
+  iconFork: "/assets/repo-card/repo-card-icon-fork.png",
+  iconOrb: "/assets/repo-card/repo-card-icon-orb.png",
+  iconGears: "/assets/repo-card/repo-card-icon-gears.png",
+  iconTag: "/assets/repo-card/repo-card-icon-tag.png",
+  iconChest: "/assets/repo-card/repo-card-icon-chest.png",
+  heroController: "/assets/repo-card/repo-card-hero-controller.png",
+  heroGears: "/assets/repo-card/repo-card-hero-gears.png",
+  heroBrain: "/assets/repo-card/repo-card-hero-brain.png",
+  badgeToolbox: "/assets/repo-card/repo-card-badge-toolbox.png",
+  badgeBricks: "/assets/repo-card/repo-card-badge-bricks.png",
+  badgePouch: "/assets/repo-card/repo-card-badge-pouch.png",
+  badgeSword: "/assets/repo-card/repo-card-badge-sword.png",
+} as const;
+
+export const REPO_CARD_RENDER_ASSET_KEYS = [
+  "frame",
+  "hero",
+  "star",
+  "fork",
+  "language",
+  "activity",
+] as const;
+
 export const FARM_PALETTE = {
   forest: "#16392d",
   spruce: "#28533d",
