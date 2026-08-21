@@ -217,7 +217,7 @@ export default function WeatherCanvas({
       cancelAnimationFrame(animFrameRef.current);
       window.removeEventListener("resize", resize);
     };
-  }, [weather, initParticles]);
+  }, [weather, initParticles, mouseRef]);
 
   if (weather === "clear") return null;
 

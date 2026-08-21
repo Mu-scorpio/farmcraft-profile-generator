@@ -5,6 +5,8 @@ import { useTranslations } from "next-intl";
 import {
   DEFAULT_REPO_CARD_EDITOR_CONFIG,
   generateRepoSvg,
+  normalizeRepoCardStatAssets,
+  REPO_CARD_STAT_OPTIONS,
   type RepoCardEditorConfig,
   type RepoSvgParams,
 } from "@/app/lib/repoSvg";
@@ -15,35 +17,25 @@ interface RepoCardProps {
   repoData: RepoSvgParams;
 }
 
-type NumericEditorKey = Exclude<keyof RepoCardEditorConfig, "heroAsset" | "statIconAssets">;
+type NumericEditorKey = Exclude<keyof RepoCardEditorConfig, "heroAsset" | "statIconAssets" | "showStatLabels">;
 
 const HERO_OPTIONS = [
   { key: "chest", asset: REPO_CARD_ASSETS.hero, labelKey: "heroChest" },
   { key: "controller", asset: REPO_CARD_ASSETS.heroController, labelKey: "heroController" },
   { key: "gears", asset: REPO_CARD_ASSETS.heroGears, labelKey: "heroGears" },
   { key: "brain", asset: REPO_CARD_ASSETS.heroBrain, labelKey: "heroBrain" },
+  { key: "toolbox", asset: REPO_CARD_ASSETS.badgeToolbox, labelKey: "badgeToolbox" },
+  { key: "bricks", asset: REPO_CARD_ASSETS.badgeBricks, labelKey: "badgeBricks" },
+  { key: "pouch", asset: REPO_CARD_ASSETS.badgePouch, labelKey: "badgePouch" },
+  { key: "sword", asset: REPO_CARD_ASSETS.badgeSword, labelKey: "badgeSword" },
 ] as const;
 
-const ICON_OPTIONS = [
-  { key: "star", asset: REPO_CARD_ASSETS.iconStar, labelKey: "iconStar" },
-  { key: "fork", asset: REPO_CARD_ASSETS.iconFork, labelKey: "iconFork" },
-  { key: "orb", asset: REPO_CARD_ASSETS.iconOrb, labelKey: "iconOrb" },
-  { key: "tag", asset: REPO_CARD_ASSETS.iconTag, labelKey: "iconTag" },
-  { key: "gears", asset: REPO_CARD_ASSETS.iconGears, labelKey: "iconGears" },
-  { key: "chest", asset: REPO_CARD_ASSETS.iconChest, labelKey: "iconChest" },
-] as const;
-
-const STAT_ITEMS = [
-  { labelKey: "statStars", index: 0 },
-  { labelKey: "statForks", index: 1 },
-  { labelKey: "statLanguage", index: 2 },
-  { labelKey: "statStatus", index: 3 },
-] as const;
+const ICON_OPTIONS = REPO_CARD_STAT_OPTIONS;
 
 function cloneDefaultEditorConfig(): RepoCardEditorConfig {
   return {
     ...DEFAULT_REPO_CARD_EDITOR_CONFIG,
-    statIconAssets: [...DEFAULT_REPO_CARD_EDITOR_CONFIG.statIconAssets] as RepoCardEditorConfig["statIconAssets"],
+    statIconAssets: [...DEFAULT_REPO_CARD_EDITOR_CONFIG.statIconAssets],
   };
 }
 
@@ -79,30 +71,47 @@ function EditorRange({ label, value, min, max, step = 1, suffix = "px", onChange
 
 export default function RepoCard({ repoData }: RepoCardProps) {
   const t = useTranslations("components");
-  const [animKey, setAnimKey] = useState(0);
   const [editorConfig, setEditorConfig] = useState<RepoCardEditorConfig>(cloneDefaultEditorConfig);
   const fontCacheRef = useRef<Record<string, opentype.Font>>({});
 
   useEffect(() => {
     setEditorConfig(cloneDefaultEditorConfig());
-    setAnimKey((key) => key + 1);
   }, [repoData.owner, repoData.repo]);
 
   const updateNumber = useCallback((key: NumericEditorKey, value: number) => {
     setEditorConfig((current) => ({ ...current, [key]: value }));
   }, []);
 
-  const updateStatIcon = useCallback((index: number, asset: string) => {
+  const updateShowStatLabels = useCallback((showStatLabels: boolean) => {
+    setEditorConfig((current) => ({ ...current, showStatLabels }));
+  }, []);
+
+  const updateStatIcon = useCallback((asset: string) => {
     setEditorConfig((current) => {
-      const statIconAssets = [...current.statIconAssets] as RepoCardEditorConfig["statIconAssets"];
-      statIconAssets[index] = asset;
-      return { ...current, statIconAssets };
+      const selectedAssets = new Set(current.statIconAssets);
+      const option = REPO_CARD_STAT_OPTIONS.find((candidate) => candidate.asset === asset);
+      if (!option) return current;
+      if (selectedAssets.has(asset)) {
+        selectedAssets.delete(asset);
+      } else {
+        const selectedVariant = current.statIconAssets.find((selectedAsset) => {
+          const selectedOption = REPO_CARD_STAT_OPTIONS.find((candidate) => candidate.asset === selectedAsset);
+          return selectedOption?.dataId === option.dataId;
+        });
+        if (selectedVariant) {
+          selectedAssets.delete(selectedVariant);
+        } else if (selectedAssets.size >= 4) {
+          return current;
+        }
+        selectedAssets.add(asset);
+      }
+      return { ...current, statIconAssets: normalizeRepoCardStatAssets([...selectedAssets]) };
     });
   }, []);
 
   const svgHtml = useMemo(() => {
-    return generateRepoSvg(repoData, {}, editorConfig);
-  }, [repoData, editorConfig, animKey]);
+    return generateRepoSvg(repoData, {}, editorConfig, false);
+  }, [repoData, editorConfig]);
 
   const handleDownload = useCallback(async () => {
     const opentype = (await import("opentype.js")).default;
@@ -224,7 +233,6 @@ export default function RepoCard({ repoData }: RepoCardProps) {
         </div>
         <button type="button" className="mc-btn-secondary text-xs" onClick={() => {
           setEditorConfig(cloneDefaultEditorConfig());
-          setAnimKey((key) => key + 1);
         }}>
           {t("repoEditor.reset")}
         </button>
@@ -248,56 +256,93 @@ export default function RepoCard({ repoData }: RepoCardProps) {
                 </button>
               ))}
             </div>
+            <div className="repo-editor-control-grid repo-editor-badge-control-grid">
+              <EditorRange label={t("repoEditor.badgeX")} value={editorConfig.heroX} min={21} max={121} onChange={(value) => updateNumber("heroX", value)} />
+              <EditorRange label={t("repoEditor.badgeY")} value={editorConfig.heroY} min={78} max={158} onChange={(value) => updateNumber("heroY", value)} />
+              <EditorRange label={t("repoEditor.badgeWidth")} value={editorConfig.heroWidth} min={270} max={390} onChange={(value) => updateNumber("heroWidth", value)} />
+              <EditorRange label={t("repoEditor.badgeHeight")} value={editorConfig.heroHeight} min={250} max={370} onChange={(value) => updateNumber("heroHeight", value)} />
+            </div>
           </section>
 
           <section className="repo-editor-section">
-            <h4>{t("repoEditor.statIcons")}</h4>
-            <div className="repo-editor-stat-list">
-              {STAT_ITEMS.map((item) => (
-                <div className="repo-editor-stat-slot" key={item.labelKey}>
-                  <span className="repo-editor-slot-label">{t(`repoEditor.${item.labelKey}`)}</span>
-                  <div className="repo-editor-icon-palette">
-                    {ICON_OPTIONS.map((option) => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        className={editorConfig.statIconAssets[item.index] === option.asset ? "is-selected" : ""}
-                        aria-label={`${t(`repoEditor.${item.labelKey}`)}: ${t(`repoEditor.${option.labelKey}`)}`}
-                        aria-pressed={editorConfig.statIconAssets[item.index] === option.asset}
-                        onClick={() => updateStatIcon(item.index, option.asset)}
-                      >
-                        <img src={option.asset} alt="" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="repo-editor-section-title-row">
+              <div>
+                <h4>{t("repoEditor.statIcons")}</h4>
+                <p className="repo-editor-section-hint">{t("repoEditor.statIconsHint")}</p>
+              </div>
+              <output className="repo-editor-selection-count" aria-live="polite">
+                {editorConfig.statIconAssets.length}/4
+              </output>
+            </div>
+            <div className="repo-editor-stat-picker">
+              {ICON_OPTIONS.map((option) => {
+                const isSelected = editorConfig.statIconAssets.includes(option.asset);
+                const isSelectedDataVariant = editorConfig.statIconAssets.some((selectedAsset) => {
+                  const selectedOption = REPO_CARD_STAT_OPTIONS.find((candidate) => candidate.asset === selectedAsset);
+                  return selectedOption?.dataId === option.dataId;
+                });
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`repo-editor-stat-option ${isSelected ? "is-selected" : ""}`}
+                    aria-label={t(`repoEditor.${option.pickerLabelKey}`)}
+                    aria-pressed={isSelected}
+                    disabled={!isSelected && !isSelectedDataVariant && editorConfig.statIconAssets.length >= 4}
+                    onClick={() => updateStatIcon(option.asset)}
+                  >
+                    <img src={option.asset} alt="" />
+                    <span>{t(`repoEditor.${option.pickerLabelKey}`)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="repo-editor-section">
+            <h4>{t("repoEditor.statDisplay")}</h4>
+            <div className="repo-editor-display-grid">
+              <label className="repo-editor-toggle">
+                <input
+                  type="checkbox"
+                  checked={editorConfig.showStatLabels}
+                  onChange={(event) => updateShowStatLabels(event.target.checked)}
+                />
+                <span>{t("repoEditor.showStatLabels")}</span>
+              </label>
+              <EditorRange
+                label={t("repoEditor.statIconGap")}
+                value={editorConfig.statsIconLabelGap}
+                min={4}
+                max={20}
+                onChange={(value) => updateNumber("statsIconLabelGap", value)}
+              />
             </div>
           </section>
 
           <section className="repo-editor-section">
             <h4>{t("repoEditor.typography")}</h4>
             <div className="repo-editor-control-grid">
-              <EditorRange label={t("repoEditor.ribbonSize")} value={editorConfig.ribbonFontSize} min={24} max={48} onChange={(value) => updateNumber("ribbonFontSize", value)} />
-              <EditorRange label={t("repoEditor.titleSize")} value={editorConfig.titleFontSize} min={30} max={56} onChange={(value) => updateNumber("titleFontSize", value)} />
-              <EditorRange label={t("repoEditor.descriptionSize")} value={editorConfig.descriptionFontSize} min={12} max={24} onChange={(value) => updateNumber("descriptionFontSize", value)} />
-              <EditorRange label={t("repoEditor.statsLabelSize")} value={editorConfig.statsLabelFontSize} min={10} max={20} onChange={(value) => updateNumber("statsLabelFontSize", value)} />
-              <EditorRange label={t("repoEditor.statsValueSize")} value={editorConfig.statsValueFontSize} min={16} max={32} onChange={(value) => updateNumber("statsValueFontSize", value)} />
-              <EditorRange label={t("repoEditor.iconSize")} value={editorConfig.statsIconSize} min={36} max={68} onChange={(value) => updateNumber("statsIconSize", value)} />
+              <EditorRange label={t("repoEditor.ribbonSize")} value={editorConfig.ribbonFontSize} min={22} max={46} onChange={(value) => updateNumber("ribbonFontSize", value)} />
+              <EditorRange label={t("repoEditor.titleSize")} value={editorConfig.titleFontSize} min={34} max={58} onChange={(value) => updateNumber("titleFontSize", value)} />
+              <EditorRange label={t("repoEditor.descriptionSize")} value={editorConfig.descriptionFontSize} min={10} max={26} onChange={(value) => updateNumber("descriptionFontSize", value)} />
+              <EditorRange label={t("repoEditor.statsLabelSize")} value={editorConfig.statsLabelFontSize} min={8} max={20} onChange={(value) => updateNumber("statsLabelFontSize", value)} />
+              <EditorRange label={t("repoEditor.statsValueSize")} value={editorConfig.statsValueFontSize} min={8} max={32} onChange={(value) => updateNumber("statsValueFontSize", value)} />
+              <EditorRange label={t("repoEditor.iconSize")} value={editorConfig.statsIconSize} min={45} max={85} onChange={(value) => updateNumber("statsIconSize", value)} />
             </div>
           </section>
 
           <section className="repo-editor-section">
             <h4>{t("repoEditor.position")}</h4>
             <div className="repo-editor-control-grid">
-              <EditorRange label={t("repoEditor.ribbonX")} value={editorConfig.ribbonX} min={400} max={560} onChange={(value) => updateNumber("ribbonX", value)} />
-              <EditorRange label={t("repoEditor.ribbonY")} value={editorConfig.ribbonY} min={76} max={120} onChange={(value) => updateNumber("ribbonY", value)} />
-              <EditorRange label={t("repoEditor.titleX")} value={editorConfig.titleX} min={380} max={500} onChange={(value) => updateNumber("titleX", value)} />
-              <EditorRange label={t("repoEditor.titleY")} value={editorConfig.titleY} min={155} max={220} onChange={(value) => updateNumber("titleY", value)} />
-              <EditorRange label={t("repoEditor.descriptionX")} value={editorConfig.descriptionX} min={380} max={500} onChange={(value) => updateNumber("descriptionX", value)} />
-              <EditorRange label={t("repoEditor.descriptionY")} value={editorConfig.descriptionY} min={210} max={270} onChange={(value) => updateNumber("descriptionY", value)} />
-              <EditorRange label={t("repoEditor.statsX")} value={editorConfig.statsX} min={360} max={440} onChange={(value) => updateNumber("statsX", value)} />
-              <EditorRange label={t("repoEditor.statsY")} value={editorConfig.statsY} min={280} max={312} onChange={(value) => updateNumber("statsY", value)} />
+              <EditorRange label={t("repoEditor.ribbonX")} value={editorConfig.ribbonX} min={408} max={568} onChange={(value) => updateNumber("ribbonX", value)} />
+              <EditorRange label={t("repoEditor.ribbonY")} value={editorConfig.ribbonY} min={56} max={96} onChange={(value) => updateNumber("ribbonY", value)} />
+              <EditorRange label={t("repoEditor.titleX")} value={editorConfig.titleX} min={363} max={483} onChange={(value) => updateNumber("titleX", value)} />
+              <EditorRange label={t("repoEditor.titleY")} value={editorConfig.titleY} min={150} max={230} onChange={(value) => updateNumber("titleY", value)} />
+              <EditorRange label={t("repoEditor.descriptionX")} value={editorConfig.descriptionX} min={363} max={483} onChange={(value) => updateNumber("descriptionX", value)} />
+              <EditorRange label={t("repoEditor.descriptionY")} value={editorConfig.descriptionY} min={191} max={271} onChange={(value) => updateNumber("descriptionY", value)} />
+              <EditorRange label={t("repoEditor.statsX")} value={editorConfig.statsX} min={332} max={452} onChange={(value) => updateNumber("statsX", value)} />
+              <EditorRange label={t("repoEditor.statsY")} value={editorConfig.statsY} min={263} max={343} onChange={(value) => updateNumber("statsY", value)} />
             </div>
           </section>
         </aside>
@@ -305,17 +350,13 @@ export default function RepoCard({ repoData }: RepoCardProps) {
         <section className="repo-editor-preview">
           <div className="repo-editor-preview-head">
             <h4>{t("repoEditor.preview")}</h4>
-            <span>{repoData.owner}/{repoData.repo}</span>
+            <span>{repoData.repo}</span>
           </div>
           <div
-            key={animKey}
             className="mc-display repo-editor-canvas flex w-full items-center justify-center p-4"
             dangerouslySetInnerHTML={{ __html: svgHtml }}
           />
           <div className="repo-editor-actions">
-            <button type="button" className="mc-btn-secondary text-xs px-4 py-2" onClick={() => setAnimKey((key) => key + 1)}>
-              {t("replay")}
-            </button>
             <button type="button" className="mc-btn text-xs px-4 py-2" onClick={handleDownload}>
               {t("download")}
             </button>

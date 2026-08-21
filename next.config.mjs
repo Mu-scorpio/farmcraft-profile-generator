@@ -42,9 +42,6 @@ const nextConfig = {
     compiler: {
         removeConsole: process.env.NODE_ENV === "production" ? {exclude: ["error", "warn"]} : false,
     },
-    env: {
-        HTTPS_PROXY: process.env.HTTPS_PROXY || "",
-    },
 };
 
 export default withNextIntl(nextConfig);

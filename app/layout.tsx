@@ -8,11 +8,7 @@ export const metadata: Metadata = {
   description:
     "Grow your GitHub profile into a dense pixel village — contribution meadows, loot badges, farmer passports, and repo cards.",
   icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
-      { url: "/favicon.ico", sizes: "16x16", type: "image/x-icon" },
-    ],
-    apple: "/icon.svg",
+    icon: [{ url: "/favicon.ico", sizes: "16x16", type: "image/x-icon" }],
   },
 };
 

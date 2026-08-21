@@ -1,5 +1,11 @@
-import { fetchContributions } from "@/app/lib/github";
+import {
+  fetchContributions,
+  getGitHubErrorPayload,
+  getGitHubErrorStatus,
+} from "@/app/lib/github";
 import { generateBakedCardSvg, escapeXml } from "@/app/lib/cardSvg";
+
+export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
@@ -13,7 +19,7 @@ export async function GET(
 
   const url = new URL(request.url);
   const { searchParams } = url;
-  const token = searchParams.get("token") || process.env["GITHUB_TOKEN"] || "";
+  const token = searchParams.get("token") || "";
 
   const quote = searchParams.get("quote") || "Exploring the infinite code blocks.";
 
@@ -39,11 +45,11 @@ export async function GET(
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const status = message.includes("not found") ? 404 : 500;
-    const escapedMsg = escapeXml(message);
+    const payload = getGitHubErrorPayload(err);
+    const status = getGitHubErrorStatus(err);
+    const escapedMsg = escapeXml(`${payload.error} ${payload.recommendation}`);
     return new Response(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="50"><text x="10" y="30" fill="red" font-size="14">${escapedMsg}</text></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="80"><text x="10" y="30" fill="red" font-size="14">${escapedMsg}</text></svg>`,
       { status, headers: { "Content-Type": "image/svg+xml" } },
     );
   }

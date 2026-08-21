@@ -10,4 +10,4 @@ FarmCraft 2.0 keeps CommitCraft's generation model and SVG-first output, but mov
 - Motion: short 120–220ms press/hover feedback, slow parallax on the farm background, and optional weather particles inherited from the reference flow.
 - Interaction: username and repository parsing match CommitCraft; weather switches between rain and clear, the meadow exposes hover details, and each generated view exposes SVG download plus an embeddable endpoint.
 
-The initial page renders a deterministic demo profile so visual QA does not depend on a GitHub token. Live public REST data is used when a username or repository is generated; `GITHUB_TOKEN` remains optional for higher-fidelity GraphQL statistics.
+The initial page starts empty and only renders data after the user submits a GitHub username or repository. Live public REST data is used when a target is generated; `GITHUB_TOKEN` remains optional for higher-fidelity GraphQL statistics.

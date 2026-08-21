@@ -40,6 +40,7 @@ yarn-error.log*
 
 # local GitHub credentials
 github token.txt
+token.txt
 
 # local analysis and browser-test artifacts
 /._reference/

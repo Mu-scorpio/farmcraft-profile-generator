@@ -2,6 +2,7 @@
  * GitHub GraphQL API - 获取用户 Commit 贡献数据
  */
 
+import { execFileSync } from "node:child_process";
 import { ProxyAgent, setGlobalDispatcher } from "undici";
 
 // ===== 全局代理注入 =====
@@ -13,6 +14,289 @@ if (proxyUrl) {
   setGlobalDispatcher(dispatcher);
 } else {
   console.log("[System] ⚠️ 未配置代理，fetch 将尝试直连...");
+}
+
+export type GitHubErrorCode = "auth_required" | "not_found" | "rate_limited" | "network" | "api" | "unknown";
+
+export interface GitHubErrorPayload {
+  error: string;
+  recommendation: string;
+  recommendationZh: string;
+  code: GitHubErrorCode;
+}
+
+interface GitHubErrorGuide {
+  message: string;
+  recommendation: string;
+  recommendationZh: string;
+}
+
+const GITHUB_ERROR_GUIDES: Record<GitHubErrorCode, GitHubErrorGuide> = {
+  auth_required: {
+    message: "GitHub did not make this resource available to the current request.",
+    recommendation: "If the resource is private, set GITHUB_TOKEN with repository access or run `gh auth login`, then restart the service.",
+    recommendationZh: "如果仓库是私有的，请配置有仓库访问权限的 GITHUB_TOKEN，或运行 `gh auth login` 后重启服务。",
+  },
+  not_found: {
+    message: "GitHub could not find the requested resource.",
+    recommendation: "Check the owner/repository spelling. If it is private, grant the configured token access; if it was renamed, use the new URL.",
+    recommendationZh: "请检查 owner/repository 是否拼写正确；如果是私有仓库，请给当前 token 授权；如果仓库改名，请使用新地址。",
+  },
+  rate_limited: {
+    message: "GitHub API rate limit reached.",
+    recommendation: "Wait for the rate limit to reset, or use a GitHub token / `gh auth login` to increase the available quota.",
+    recommendationZh: "GitHub API 已达到频率限制，请等待配额重置，或配置 token / 执行 `gh auth login` 后再试。",
+  },
+  network: {
+    message: "Unable to reach GitHub right now.",
+    recommendation: "Check HTTPS_PROXY/HTTP_PROXY and make sure the proxy is running, then retry the request.",
+    recommendationZh: "当前无法连接 GitHub，请检查 HTTPS_PROXY/HTTP_PROXY 及代理服务是否运行，然后重试。",
+  },
+  api: {
+    message: "GitHub returned an error while loading the resource.",
+    recommendation: "Retry the request. If it persists, check the token scopes and GitHub API availability.",
+    recommendationZh: "请重试；如果问题持续，请检查 token 权限范围以及 GitHub API 是否可用。",
+  },
+  unknown: {
+    message: "Unable to load data from GitHub.",
+    recommendation: "Check the network, configure GITHUB_TOKEN or run `gh auth login`, then restart the service.",
+    recommendationZh: "请检查网络，配置 GITHUB_TOKEN 或运行 `gh auth login`，然后重启服务。",
+  },
+};
+
+export class GitHubAccessError extends Error {
+  constructor(
+    public readonly code: GitHubErrorCode,
+    message: string,
+    public readonly recommendation: string,
+    public readonly recommendationZh: string,
+    public readonly status = 500,
+  ) {
+    super(message);
+    this.name = "GitHubAccessError";
+  }
+}
+
+export function createGitHubAccessError(
+  code: GitHubErrorCode,
+  resource: string,
+  status = 500,
+): GitHubAccessError {
+  const guide = GITHUB_ERROR_GUIDES[code];
+  const message = code === "not_found"
+    ? `GitHub could not find ${resource}.`
+    : code === "api"
+      ? `GitHub returned an error while loading ${resource}.`
+      : guide.message;
+  return new GitHubAccessError(
+    code,
+    message,
+    guide.recommendation,
+    guide.recommendationZh,
+    status,
+  );
+}
+
+export function getGitHubErrorPayload(error: unknown): GitHubErrorPayload {
+  if (error instanceof GitHubAccessError) {
+    return {
+      error: error.message,
+      recommendation: error.recommendation,
+      recommendationZh: error.recommendationZh,
+      code: error.code,
+    };
+  }
+
+  const guide = GITHUB_ERROR_GUIDES.unknown;
+  return {
+    error: guide.message,
+    recommendation: guide.recommendation,
+    recommendationZh: guide.recommendationZh,
+    code: "unknown",
+  };
+}
+
+export function getGitHubErrorStatus(error: unknown): number {
+  return error instanceof GitHubAccessError ? error.status : 500;
+}
+
+function normalizeToken(value: string | null | undefined): string | null {
+  const token = value?.trim() || "";
+  return token && !/\s/.test(token) ? token : null;
+}
+
+let cachedGitHubCliToken: string | undefined;
+
+function readGitHubCliToken(): string | null {
+  if (cachedGitHubCliToken) return cachedGitHubCliToken;
+
+  try {
+    const command = process.platform === "win32" ? "gh.exe" : "gh";
+    const output = execFileSync(command, ["auth", "token"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      timeout: 3000,
+      windowsHide: true,
+      maxBuffer: 16 * 1024,
+    }) as string;
+    const token = normalizeToken(output);
+    if (token) cachedGitHubCliToken = token;
+  } catch {
+    // GitHub CLI may be installed but not authenticated yet. Do not cache
+    // this negative result so a later `gh auth login` is picked up.
+  }
+
+  return cachedGitHubCliToken || null;
+}
+
+function getAuthTokens(explicitToken?: string): string[] {
+  const tokens: string[] = [];
+  const seen = new Set<string>();
+  for (const candidate of [explicitToken, process.env["GITHUB_TOKEN"], process.env["GH_TOKEN"], readGitHubCliToken()]) {
+    const token = normalizeToken(candidate);
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    tokens.push(token);
+  }
+  return tokens;
+}
+
+type GitHubRequestFailure = {
+  kind: "network" | "http" | "api";
+  status?: number;
+  message: string;
+};
+
+type GitHubRequestAttempt<T> =
+  | { ok: true; data: T }
+  | { ok: false; failure: GitHubRequestFailure };
+
+function payloadMessage(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object" && "message" in payload) {
+    const message = (payload as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
+}
+
+function graphQLErrors(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object" || !("errors" in payload)) return [];
+  const errors = (payload as { errors?: unknown }).errors;
+  if (!Array.isArray(errors)) return [];
+  return errors.map((error) => {
+    if (error && typeof error === "object" && "message" in error && typeof (error as { message?: unknown }).message === "string") {
+      return (error as { message: string }).message;
+    }
+    return "GitHub GraphQL request failed";
+  });
+}
+
+async function requestGitHubOnce<T>(
+  url: string,
+  init: RequestInit,
+  token: string | undefined,
+  graphql: boolean,
+): Promise<GitHubRequestAttempt<T>> {
+  try {
+    const headers = new Headers(init.headers);
+    if (!headers.has("Accept")) headers.set("Accept", "application/vnd.github+json");
+    if (!headers.has("User-Agent")) headers.set("User-Agent", "FarmCraft/1.0");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+
+    const response = await fetch(url, { ...init, headers });
+    const rawBody = await response.text();
+    let payload: unknown = null;
+    if (rawBody) {
+      try {
+        payload = JSON.parse(rawBody);
+      } catch {
+        payload = null;
+      }
+    }
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        failure: {
+          kind: "http",
+          status: response.status,
+          message: payloadMessage(payload, rawBody.slice(0, 240)),
+        },
+      };
+    }
+
+    const errors = graphql ? graphQLErrors(payload) : [];
+    if (errors.length) {
+      return {
+        ok: false,
+        failure: { kind: "api", status: response.status, message: errors.join(", ") },
+      };
+    }
+
+    if (payload === null) {
+      return {
+        ok: false,
+        failure: { kind: "api", status: response.status, message: "GitHub returned an empty response" },
+      };
+    }
+
+    return { ok: true, data: payload as T };
+  } catch (error) {
+    return {
+      ok: false,
+      failure: {
+        kind: "network",
+        message: error instanceof Error ? error.message : "GitHub request failed",
+      },
+    };
+  }
+}
+
+function errorFromFailures(
+  resource: string,
+  failures: GitHubRequestFailure[],
+  authAttempted: boolean,
+): GitHubAccessError {
+  const last = failures[failures.length - 1];
+  if (failures.some((failure) => failure.status === 429)) {
+    return createGitHubAccessError("rate_limited", resource, 429);
+  }
+  if (last?.kind === "network") {
+    return createGitHubAccessError("network", resource, 503);
+  }
+  if (last?.status === 401 || last?.status === 403 || (!authAttempted && last?.status === 404)) {
+    return createGitHubAccessError("auth_required", resource, last.status);
+  }
+  if (last?.status === 404) {
+    return createGitHubAccessError("not_found", resource, 404);
+  }
+  const upstreamStatus = last?.status;
+  const safeStatus = upstreamStatus && upstreamStatus >= 400 && upstreamStatus <= 599 ? upstreamStatus : 502;
+  return createGitHubAccessError("api", resource, safeStatus);
+}
+
+async function requestGitHubJson<T>(
+  url: string,
+  init: RequestInit,
+  options: { resource: string; token?: string; graphql?: boolean; allowAuthFallback?: boolean },
+): Promise<T> {
+  const failures: GitHubRequestFailure[] = [];
+  const direct = await requestGitHubOnce<T>(url, init, undefined, options.graphql === true);
+  if (direct.ok) return direct.data;
+  failures.push(direct.failure);
+
+  if (options.allowAuthFallback === false) {
+    throw errorFromFailures(options.resource, failures, false);
+  }
+
+  const tokens = getAuthTokens(options.token);
+  for (const token of tokens) {
+    const authenticated = await requestGitHubOnce<T>(url, init, token, options.graphql === true);
+    if (authenticated.ok) return authenticated.data;
+    failures.push(authenticated.failure);
+  }
+
+  throw errorFromFailures(options.resource, failures, tokens.length > 0);
 }
 
 // ===== 类型定义 =====
@@ -161,16 +445,38 @@ export async function fetchContributions(
   from?: string,
   to?: string
 ): Promise<FetchContributionsResult> {
-  if (!token) return fetchPublicContributions(username, from, to);
+  // Prefer the public REST/HTML path. Authenticated requests are only made
+  // when the anonymous path cannot access the resource.
+  try {
+    return await fetchPublicContributions(username, from, to, undefined, false);
+  } catch (publicError) {
+    try {
+      return await fetchContributionsGraphQL(username, token, from, to);
+    } catch (graphQLError) {
+      // REST with credentials is a useful final fallback when GraphQL is
+      // disabled by the token's scopes or by an enterprise GitHub policy.
+      try {
+        return await fetchPublicContributions(username, from, to, token, true);
+      } catch {
+        throw graphQLError instanceof GitHubAccessError ? graphQLError : publicError;
+      }
+    }
+  }
+}
 
+async function fetchContributionsGraphQL(
+  username: string,
+  token: string,
+  from?: string,
+  to?: string,
+): Promise<FetchContributionsResult> {
   const variables: Record<string, string> = { username };
   if (from) variables.from = new Date(from).toISOString();
   if (to) variables.to = new Date(to).toISOString();
 
-  const response = await fetch("https://api.github.com/graphql", {
+  const payload = await requestGitHubJson<{ data?: GitHubContributionResponse }>("https://api.github.com/graphql", {
     method: "POST",
-    headers: { 
-      Authorization: `Bearer ${token}`,
+    headers: {
       "Content-Type": "application/json",
       "User-Agent": "CommitCraft/1.0",
     },
@@ -178,26 +484,12 @@ export async function fetchContributions(
       query: CONTRIBUTIONS_QUERY,
       variables,
     }),
-  });
+  }, { resource: `contributions for GitHub user "${username}"`, token, graphql: true });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.log("[GitHub] ❌ 非 200 响应体:", text);
-    throw new Error(`GitHub API error (${response.status}): ${text}`);
-  }
+  const data = payload.data;
 
-  const json = await response.json();
-  if (json.errors) {
-    console.log("[GitHub] ❌ GraphQL errors:", JSON.stringify(json.errors));
-    throw new Error(
-      `GitHub GraphQL errors: ${json.errors.map((e: { message: string }) => e.message).join(", ")}`
-    );
-  }
-
-  const data = json.data as GitHubContributionResponse;
-
-  if (!data.user) {
-    throw new Error(`GitHub user "${username}" not found`);
+  if (!data?.user) {
+    throw createGitHubAccessError("not_found", `GitHub user "${username}"`, 404);
   }
 
   const user = data.user;
@@ -239,88 +531,14 @@ export interface RepoInfo {
   isPrivate: boolean;
 }
 
-interface GitHubRepoResponse {
-  repository: {
-    owner: { login: string };
-    name: string;
-    description: string | null;
-    isPrivate: boolean;
-    stargazerCount: number;
-    forkCount: number;
-    issues: { totalCount: number };
-    diskUsage: number | null;
-    primaryLanguage: { name: string; color: string } | null;
-  } | null;
-}
-
-const REPO_QUERY = `
-  query($owner: String!, $name: String!) {
-    repository(owner: $owner, name: $name) {
-      owner { login }
-      name
-      description
-      isPrivate
-      stargazerCount
-      forkCount
-      issues(states: OPEN) { totalCount }
-      diskUsage
-      primaryLanguage { name color }
-    }
-  }
-`;
-
 export async function fetchRepoInfo(
   owner: string,
   name: string,
   token: string,
 ): Promise<RepoInfo> {
-  if (!token) return fetchPublicRepoInfo(owner, name);
-
-  const response = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "User-Agent": "CommitCraft/1.0",
-    },
-    body: JSON.stringify({
-      query: REPO_QUERY,
-      variables: { owner, name },
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    console.log("[GitHub] ❌ Repo API 非 200:", text);
-    throw new Error(`GitHub API error (${response.status}): ${text}`);
-  }
-
-  const json = await response.json();
-  if (json.errors) {
-    console.log("[GitHub] ❌ Repo GraphQL errors:", JSON.stringify(json.errors));
-    throw new Error(
-      `GitHub GraphQL errors: ${json.errors.map((e: { message: string }) => e.message).join(", ")}`
-    );
-  }
-
-  const data = json.data as GitHubRepoResponse;
-  if (!data.repository) {
-    throw new Error(`Repository "${owner}/${name}" not found`);
-  }
-
-  const r = data.repository;
-  return {
-    owner: r.owner.login,
-    repo: r.name,
-    description: r.description || "No description provided.",
-    language: r.primaryLanguage?.name || "Unknown",
-    languageColor: r.primaryLanguage?.color || "#888888",
-    stars: r.stargazerCount,
-    forks: r.forkCount,
-    issues: r.issues.totalCount,
-    sizeKb: r.diskUsage || 0,
-    isPrivate: r.isPrivate,
-  };
+  // The REST endpoint already contains every field needed by the card. It
+  // tries anonymously first, then falls back to GITHUB_TOKEN / GH_TOKEN / gh.
+  return fetchPublicRepoInfo(owner, name, token, true);
 }
 
 type PublicUserPayload = {
@@ -336,18 +554,21 @@ type PublicUserPayload = {
   public_repos: number;
 };
 
-async function fetchGitHubRest<T>(path: string): Promise<T> {
-  const response = await fetch(`https://api.github.com${path}`, {
+async function fetchGitHubRest<T>(
+  path: string,
+  token?: string,
+  allowAuthFallback = true,
+): Promise<T> {
+  return requestGitHubJson<T>(`https://api.github.com${path}`, {
     headers: {
       Accept: "application/vnd.github+json",
       "User-Agent": "FarmCraft/1.0",
     },
+  }, {
+    resource: `GitHub resource ${path}`,
+    token,
+    allowAuthFallback,
   });
-  if (!response.ok) {
-    if (response.status === 404) throw new Error(`GitHub resource not found: ${path}`);
-    throw new Error(`GitHub REST API error (${response.status})`);
-  }
-  return response.json() as Promise<T>;
 }
 
 function contributionCountForLevel(level: number): number {
@@ -390,8 +611,18 @@ function buildContributionCalendarFromLevels(
  * Public, token-free fallback. GitHub's contribution graph is HTML, but its
  * data-level cells are stable and give enough fidelity for a profile preview.
  */
-async function fetchPublicContributions(username: string, from?: string, to?: string): Promise<FetchContributionsResult> {
-  const profile = await fetchGitHubRest<PublicUserPayload>(`/users/${encodeURIComponent(username)}`);
+async function fetchPublicContributions(
+  username: string,
+  from?: string,
+  to?: string,
+  token?: string,
+  allowAuthFallback = true,
+): Promise<FetchContributionsResult> {
+  const profile = await fetchGitHubRest<PublicUserPayload>(
+    `/users/${encodeURIComponent(username)}`,
+    token,
+    allowAuthFallback,
+  );
   const contributionQuery = new URLSearchParams();
   if (from) contributionQuery.set("from", from.slice(0, 10));
   if (to) contributionQuery.set("to", to.slice(0, 10));
@@ -407,7 +638,11 @@ async function fetchPublicContributions(username: string, from?: string, to?: st
 
   let totalStars = 0;
   try {
-    const repos = await fetchGitHubRest<{ stargazers_count: number }[]>(`/users/${encodeURIComponent(profile.login)}/repos?per_page=100&sort=updated`);
+    const repos = await fetchGitHubRest<{ stargazers_count: number }[]>(
+      `/users/${encodeURIComponent(profile.login)}/repos?per_page=100&sort=updated`,
+      token,
+      allowAuthFallback,
+    );
     totalStars = repos.reduce((sum, repo) => sum + (repo.stargazers_count || 0), 0);
   } catch {
     totalStars = 0;
@@ -448,8 +683,17 @@ type PublicRepoPayload = {
   language_url?: string;
 };
 
-async function fetchPublicRepoInfo(owner: string, name: string): Promise<RepoInfo> {
-  const repo = await fetchGitHubRest<PublicRepoPayload>(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`);
+async function fetchPublicRepoInfo(
+  owner: string,
+  name: string,
+  token?: string,
+  allowAuthFallback = true,
+): Promise<RepoInfo> {
+  const repo = await fetchGitHubRest<PublicRepoPayload>(
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
+    token,
+    allowAuthFallback,
+  );
   return {
     owner: repo.owner.login,
     repo: repo.name,

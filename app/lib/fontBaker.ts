@@ -123,7 +123,12 @@ export function bakeTextElement(opts: TextToPathOptions): string {
 
   // 额外属性
   if (extraAttrs) {
-    // 目前不需要，预留扩展
+    const extra = Object.entries(extraAttrs)
+      .map(([key, value]) => `${key}="${value.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`)
+      .join(" ");
+    if (extra) {
+      pathStr = pathStr.replace("<path ", `<path ${extra} `);
+    }
   }
 
   return pathStr;

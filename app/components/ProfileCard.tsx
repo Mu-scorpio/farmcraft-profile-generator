@@ -75,7 +75,7 @@ export default function ProfileCardView({ username, avatarUrl, stats, totalContr
 
     const bakeMixed = (
       text: string, startX: number, yPos: number,
-      fontSize: number, fillColor: string, opacityVal: string, fontWeightAttr?: string,
+      fontSize: number, fillColor: string, opacityVal: string,
     ): { elements: SVGElement[]; endX: number } => {
       const elements: SVGElement[] = [];
       let curX = startX;
@@ -110,7 +110,6 @@ export default function ProfileCardView({ username, avatarUrl, stats, totalContr
       const opacity = textEl.getAttribute("opacity") || "1";
       const textAnchor = textEl.getAttribute("text-anchor") || "start";
       const filter = textEl.getAttribute("filter") || "";
-      const fw = textEl.getAttribute("font-weight") || "";
       const fullText = textEl.textContent || "";
 
       let totalW = 0;
@@ -128,7 +127,7 @@ export default function ProfileCardView({ username, avatarUrl, stats, totalContr
         if (child.nodeType === Node.TEXT_NODE) {
           const txt = child.textContent || "";
           if (!txt) return;
-          const { elements, endX } = bakeMixed(txt, currentX, y, fontSize, baseFill, opacity, fw);
+          const { elements, endX } = bakeMixed(txt, currentX, y, fontSize, baseFill, opacity);
           elements.forEach(el => g.appendChild(el));
           currentX = endX;
         } else if (child.nodeType === Node.ELEMENT_NODE && (child as Element).tagName.toLowerCase() === "tspan") {
@@ -136,7 +135,7 @@ export default function ProfileCardView({ username, avatarUrl, stats, totalContr
           const txt = tspan.textContent || "";
           if (!txt) return;
           const tFill = tspan.getAttribute("fill") || baseFill;
-          const { elements, endX } = bakeMixed(txt, currentX, y, fontSize, tFill, opacity, fw);
+          const { elements, endX } = bakeMixed(txt, currentX, y, fontSize, tFill, opacity);
           elements.forEach(el => g.appendChild(el));
           currentX = endX;
         }
@@ -155,7 +154,7 @@ export default function ProfileCardView({ username, avatarUrl, stats, totalContr
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [username]);
+  }, [t, username]);
 
   return (
     <div className="w-full mt-8">

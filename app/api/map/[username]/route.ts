@@ -1,5 +1,23 @@
-import { fetchContributions } from "@/app/lib/github";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import {
+  fetchContributions,
+  getGitHubErrorPayload,
+  getGitHubErrorStatus,
+} from "@/app/lib/github";
 import { generateMapSvg } from "@/app/lib/mapSvg";
+
+export const runtime = "nodejs";
+
+let cachedBorderDataUri: Promise<string> | null = null;
+
+function loadMeadowBorderDataUri(): Promise<string> {
+  if (!cachedBorderDataUri) {
+    const assetPath = path.join(process.cwd(), "public", "assets", "farm", "meadow-border.png");
+    cachedBorderDataUri = readFile(assetPath).then((bytes) => `data:image/png;base64,${bytes.toString("base64")}`);
+  }
+  return cachedBorderDataUri;
+}
 
 export async function GET(
   request: Request,
@@ -13,7 +31,7 @@ export async function GET(
 
   const url = new URL(request.url);
   const { searchParams } = url;
-  const token = searchParams.get("token") || process.env["GITHUB_TOKEN"] || "";
+  const token = searchParams.get("token") || "";
 
   const from = searchParams.get("from") || undefined;
   const to = searchParams.get("to") || undefined;
@@ -21,7 +39,8 @@ export async function GET(
 
   try {
     const { calendar } = await fetchContributions(username, token, from, to);
-    const svg = generateMapSvg({ weeks: calendar.weeks, interactive: false, animate });
+    const borderHref = await loadMeadowBorderDataUri();
+    const svg = generateMapSvg({ weeks: calendar.weeks, interactive: false, animate, borderHref });
 
     return new Response(svg, {
       headers: {
@@ -30,11 +49,12 @@ export async function GET(
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const status = message.includes("not found") ? 404 : 500;
+    const payload = getGitHubErrorPayload(err);
+    const status = getGitHubErrorStatus(err);
+    const message = `${payload.error} ${payload.recommendation}`;
     const escapedMsg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return new Response(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="50"><text x="10" y="30" fill="red" font-size="14">${escapedMsg}</text></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="80"><text x="10" y="30" fill="red" font-size="14">${escapedMsg}</text></svg>`,
       { status, headers: { "Content-Type": "image/svg+xml" } },
     );
   }

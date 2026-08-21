@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { REPO_CARD_ASSETS } from "./themeAssets";
+import { REPO_CARD_ASSET_SOURCES, REPO_CARD_RENDER_ASSET_KEYS } from "./themeAssets";
 import type { RepoCardAssetKey, RepoCardAssetUris } from "./repoSvg";
 
 let cachedAssetUris: Promise<RepoCardAssetUris> | null = null;
@@ -14,17 +14,15 @@ async function readPngAsDataUri(url: string): Promise<string> {
   return `data:image/png;base64,${bytes.toString("base64")}`;
 }
 
-/** Load the six assets required by the self-contained server SVG. */
+/** Load the complete repository-card asset set required by self-contained SVG exports. */
 export function loadRepoCardAssetUris(): Promise<RepoCardAssetUris> {
   if (!cachedAssetUris) {
-    cachedAssetUris = Promise.all([
-      ["frame", REPO_CARD_ASSETS.frame],
-      ["hero", REPO_CARD_ASSETS.hero],
-      ["star", REPO_CARD_ASSETS.iconStar],
-      ["fork", REPO_CARD_ASSETS.iconFork],
-      ["language", REPO_CARD_ASSETS.iconOrb],
-      ["activity", REPO_CARD_ASSETS.iconGears],
-    ].map(async ([key, url]) => [key as RepoCardAssetKey, await readPngAsDataUri(url)] as const))
+    cachedAssetUris = Promise.all(
+      REPO_CARD_RENDER_ASSET_KEYS.map(async (key) => [
+        key as RepoCardAssetKey,
+        await readPngAsDataUri(REPO_CARD_ASSET_SOURCES[key]),
+      ] as const),
+    )
       .then((entries) => Object.fromEntries(entries) as RepoCardAssetUris);
   }
   return cachedAssetUris;

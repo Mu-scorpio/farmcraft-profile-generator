@@ -70,7 +70,9 @@ export function generateMapSvg({
       const level = contributionLevel(day);
       const palette = MAP_LEVELS[level];
       const x = fieldX + weekIndex * (cellSize + fieldGap);
-      const y = gridY + dayIndex * (cellSize + fieldGap);
+      const parsedDate = Date.parse(`${day.date}T00:00:00Z`);
+      const weekdayIndex = Number.isNaN(parsedDate) ? dayIndex : new Date(parsedDate).getUTCDay();
+      const y = gridY + weekdayIndex * (cellSize + fieldGap);
       const title = `${day.date} · ${day.contributionCount.toLocaleString()} contributions`;
       const animationClass = animate ? ` class="field-cell-rise field-cell-rise-${(weekIndex + dayIndex) % 7}"` : "";
 

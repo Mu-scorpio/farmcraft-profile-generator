@@ -9,7 +9,11 @@
 
 import { bakeMixedTextElement, ensureFontsLoaded } from "./fontBaker";
 import { preloadAssets, toDataUri } from "./assetCache";
-import { REPO_CARD_ASSETS, REPO_CARD_RENDER_ASSET_KEYS } from "./themeAssets";
+import {
+  REPO_CARD_ASSETS,
+  REPO_CARD_ASSET_SOURCES,
+  REPO_CARD_RENDER_ASSET_KEYS,
+} from "./themeAssets";
 
 export function escapeXml(value: string): string {
   return value
@@ -38,7 +42,11 @@ export type RepoCardAssetUris = Partial<Record<RepoCardAssetKey, string>>;
 
 export interface RepoCardEditorConfig {
   heroAsset: string;
-  statIconAssets: [string, string, string, string];
+  heroX: number;
+  heroY: number;
+  heroWidth: number;
+  heroHeight: number;
+  statIconAssets: string[];
   ribbonFontSize: number;
   ribbonX: number;
   ribbonY: number;
@@ -51,58 +59,80 @@ export interface RepoCardEditorConfig {
   statsX: number;
   statsY: number;
   statsIconSize: number;
+  statsIconLabelGap: number;
+  showStatLabels: boolean;
   statsLabelFontSize: number;
   statsValueFontSize: number;
 }
 
+export const REPO_CARD_STAT_OPTIONS = [
+  { id: "stars", dataId: "stars", asset: REPO_CARD_ASSETS.iconStar, labelKey: "statStars", pickerLabelKey: "iconStar", svgLabel: "Stars", valueColor: "#b86a0a" },
+  { id: "forks", dataId: "forks", asset: REPO_CARD_ASSETS.iconFork, labelKey: "statForks", pickerLabelKey: "iconFork", svgLabel: "Forks", valueColor: "#5b4c32" },
+  { id: "language", dataId: "language", asset: REPO_CARD_ASSETS.iconOrb, labelKey: "statLanguage", pickerLabelKey: "iconOrb", svgLabel: "Language", valueColor: "#5b351c" },
+  { id: "issues", dataId: "issues", asset: REPO_CARD_ASSETS.iconTag, labelKey: "statIssues", pickerLabelKey: "iconTag", svgLabel: "Issues", valueColor: "#7b3e29" },
+  { id: "status", dataId: "status", asset: REPO_CARD_ASSETS.iconGears, labelKey: "statStatus", pickerLabelKey: "iconGears", svgLabel: "Status", valueColor: "#35641f" },
+  { id: "size", dataId: "size", asset: REPO_CARD_ASSETS.iconChest, labelKey: "statSize", pickerLabelKey: "iconChest", svgLabel: "Size", valueColor: "#5b351c" },
+  { id: "brain", dataId: "language", asset: REPO_CARD_ASSETS.iconBrain, labelKey: "statLanguage", pickerLabelKey: "iconBrain", svgLabel: "Language", valueColor: "#5b351c" },
+  { id: "controller", dataId: "status", asset: REPO_CARD_ASSETS.iconController, labelKey: "statStatus", pickerLabelKey: "iconController", svgLabel: "Status", valueColor: "#35641f" },
+] as const;
+
+export function normalizeRepoCardStatAssets(statIconAssets: string[]): string[] {
+  const selected: string[] = [];
+  const selectedData = new Set<string>();
+  for (const asset of statIconAssets) {
+    const option = REPO_CARD_STAT_OPTIONS.find((candidate) => candidate.asset === asset);
+    if (!option || selectedData.has(option.dataId)) continue;
+    selected.push(option.asset);
+    selectedData.add(option.dataId);
+    if (selected.length === 4) break;
+  }
+  return selected;
+}
+
 export const DEFAULT_REPO_CARD_EDITOR_CONFIG: RepoCardEditorConfig = {
   heroAsset: REPO_CARD_ASSETS.hero,
+  heroX: 71,
+  heroY: 118,
+  heroWidth: 330,
+  heroHeight: 310,
   statIconAssets: [
-    REPO_CARD_ASSETS.iconStar,
-    REPO_CARD_ASSETS.iconFork,
-    REPO_CARD_ASSETS.iconOrb,
-    REPO_CARD_ASSETS.iconGears,
+      REPO_CARD_ASSETS.iconStar,
+      REPO_CARD_ASSETS.iconFork,
+      REPO_CARD_ASSETS.iconOrb,
+      REPO_CARD_ASSETS.iconGears,
   ],
-  ribbonFontSize: 40,
-  ribbonX: 480,
-  ribbonY: 99,
-  titleFontSize: 44,
+  ribbonFontSize: 34,
+  ribbonX: 488,
+  ribbonY: 76,
+  titleFontSize: 46,
   titleX: 423,
   titleY: 190,
   descriptionFontSize: 18,
   descriptionX: 423,
   descriptionY: 231,
-  statsX: 412,
+  statsX: 392,
   statsY: 303,
-  statsIconSize: 54,
+  statsIconSize: 65,
+  statsIconLabelGap: 12,
+  showStatLabels: true,
   statsLabelFontSize: 14,
-  statsValueFontSize: 22,
+  statsValueFontSize: 20,
 };
 
 const CARD_WIDTH = 960;
 const CARD_HEIGHT = 532;
 
 function getAssetUris(overrides: RepoCardAssetUris = {}): Record<RepoCardAssetKey, string> {
-  return {
-    frame: overrides.frame || REPO_CARD_ASSETS.frame,
-    hero: overrides.hero || REPO_CARD_ASSETS.hero,
-    star: overrides.star || REPO_CARD_ASSETS.iconStar,
-    fork: overrides.fork || REPO_CARD_ASSETS.iconFork,
-    language: overrides.language || REPO_CARD_ASSETS.iconOrb,
-    activity: overrides.activity || REPO_CARD_ASSETS.iconGears,
-  };
+  const resolved = {} as Record<RepoCardAssetKey, string>;
+  for (const key of REPO_CARD_RENDER_ASSET_KEYS) {
+    resolved[key] = overrides[key] || REPO_CARD_ASSET_SOURCES[key];
+  }
+  return resolved;
 }
 
 /** Preload the image set used by the card preview/API. */
 export async function ensureRepoAssetsLoaded(): Promise<void> {
-  await preloadAssets(REPO_CARD_RENDER_ASSET_KEYS.map((key) => {
-    if (key === "frame") return REPO_CARD_ASSETS.frame;
-    if (key === "hero") return REPO_CARD_ASSETS.hero;
-    if (key === "star") return REPO_CARD_ASSETS.iconStar;
-    if (key === "fork") return REPO_CARD_ASSETS.iconFork;
-    if (key === "language") return REPO_CARD_ASSETS.iconOrb;
-    return REPO_CARD_ASSETS.iconGears;
-  }));
+  await preloadAssets(REPO_CARD_RENDER_ASSET_KEYS.map((key) => REPO_CARD_ASSET_SOURCES[key]));
 }
 
 function formatCount(value: number): string {
@@ -235,34 +265,59 @@ function buildRepoSvg(
   assets: Record<RepoCardAssetKey, string>,
   renderText: TextRenderer,
   editor: RepoCardEditorConfig,
+  animate = true,
 ): string {
-  const title = limitText(`${params.owner}/${params.repo}`, 24);
+  const title = limitText(params.repo || "Repository", 24);
   const [descriptionLine1, descriptionLine2] = wrapDescription(params.description, editor.descriptionFontSize, 415);
   const language = limitText(params.language || "Unknown", 12);
   const status = params.isPrivate ? "Private" : "Active";
   const size = formatSize(params.sizeKb);
-  const editorAssetMap = new Map<string, string>([
-    [REPO_CARD_ASSETS.frame, assets.frame],
-    [REPO_CARD_ASSETS.hero, assets.hero],
-    [REPO_CARD_ASSETS.iconStar, assets.star],
-    [REPO_CARD_ASSETS.iconFork, assets.fork],
-    [REPO_CARD_ASSETS.iconOrb, assets.language],
-    [REPO_CARD_ASSETS.iconGears, assets.activity],
-  ]);
+  const editorAssetMap = new Map<string, string>(
+    REPO_CARD_RENDER_ASSET_KEYS.map((key) => [REPO_CARD_ASSET_SOURCES[key], assets[key]] as [string, string]),
+  );
   const resolveEditorAsset = (href: string): string => editorAssetMap.get(href) || href;
   const heroAsset = resolveEditorAsset(editor.heroAsset);
-  const statIconAssets = editor.statIconAssets.map(resolveEditorAsset);
+  const statIconAssets = normalizeRepoCardStatAssets(editor.statIconAssets);
   const statPanelX = editor.statsX;
   const statPanelY = editor.statsY;
-  const statColumnXs = [statPanelX + 57, statPanelX + 172, statPanelX + 287, statPanelX + 402];
-  const footerY = Math.max(447, statPanelY + 145);
+  const statColumnXs = [statPanelX + 60, statPanelX + 180, statPanelX + 300, statPanelX + 420];
+  const statPanelHeight = Math.max(
+    128,
+    12 + editor.statsIconSize + (editor.showStatLabels ? editor.statsIconLabelGap + 28 + 7 : 28 + 10),
+  );
+  const statLabelY = statPanelY + 12 + editor.statsIconSize + editor.statsIconLabelGap;
+  const statValueY = editor.showStatLabels
+    ? statLabelY + 28
+    : statPanelY + 12 + editor.statsIconSize + 34;
+  const footerY = Math.max(447, statPanelY + statPanelHeight + 16);
 
-  const statColumns = [
-    { x: statColumnXs[0], icon: statIconAssets[0], label: "Stars", value: formatCount(params.stars), valueColor: "#b86a0a" },
-    { x: statColumnXs[1], icon: statIconAssets[1], label: "Forks", value: formatCount(params.forks), valueColor: "#5b4c32" },
-    { x: statColumnXs[2], icon: statIconAssets[2], label: "Language", value: language, valueColor: "#5b351c" },
-    { x: statColumnXs[3], icon: statIconAssets[3], label: "Status", value: status, valueColor: "#35641f" },
-  ];
+  const statColumns = statIconAssets.map((href, index) => {
+    const option = REPO_CARD_STAT_OPTIONS.find((candidate) => candidate.asset === href) || REPO_CARD_STAT_OPTIONS[0];
+    const value = option.dataId === "stars"
+      ? formatCount(params.stars)
+      : option.dataId === "forks"
+        ? formatCount(params.forks)
+        : option.dataId === "language"
+          ? language
+          : option.dataId === "issues"
+            ? formatCount(params.issues)
+            : option.dataId === "status"
+              ? status
+              : size;
+    return {
+      x: statColumnXs[index],
+      icon: resolveEditorAsset(href),
+      label: option.svgLabel,
+      value,
+      valueColor: option.valueColor,
+    };
+  });
+  const animationCss = animate
+    ? "@keyframes repo-card-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } } .repo-card-rise { animation: repo-card-rise .42s steps(3, end) both; }"
+    : "";
+  const wrapCardSection = (content: string, delay: string): string => animate
+    ? `<g class="repo-card-rise" style="animation-delay: ${delay}">${content}</g>`
+    : content;
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${CARD_WIDTH} ${CARD_HEIGHT}" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" style="image-rendering: pixelated" role="img" aria-label="Repository card for ${escapeXml(title)}">
 <defs>
@@ -270,8 +325,7 @@ function buildRepoSvg(
     @font-face { font-family: 'Zpix'; src: url('/fonts/zpix.ttf') format('truetype'); font-weight: 400; font-style: normal; }
     @font-face { font-family: 'Zpix'; src: url('/fonts/zpix.ttf') format('truetype'); font-weight: 700; font-style: normal; }
     .repo-card-font { font-family: 'Zpix', 'Courier New', monospace; }
-    @keyframes repo-card-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-    .repo-card-rise { animation: repo-card-rise .42s steps(3, end) both; }
+    ${animationCss}
   </style>
   <filter id="repo-card-text-shadow" x="-20%" y="-20%" width="140%" height="140%">
     <feDropShadow dx="2" dy="2" stdDeviation="0" flood-color="#fff5c8" flood-opacity="0.7" />
@@ -281,34 +335,33 @@ function buildRepoSvg(
 <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="#173128" />
 <image href="${assets.frame}" x="0" y="0" width="${CARD_WIDTH}" height="${CARD_HEIGHT}" preserveAspectRatio="none" />
 
-<g class="repo-card-rise" style="animation-delay: .06s">
+${wrapCardSection(`
   ${renderText("REPO ACHIEVEMENT", editor.ribbonX, editor.ribbonY, editor.ribbonFontSize, "#5c2d10", { anchor: "middle", weight: "700", shadow: true })}
-</g>
+`, ".06s")}
 
-<g class="repo-card-rise" style="animation-delay: .12s">
-  <image href="${escapeXml(heroAsset)}" x="54" y="153" width="330" height="310" />
-</g>
+${wrapCardSection(`
+  <image href="${escapeXml(heroAsset)}" x="${editor.heroX}" y="${editor.heroY}" width="${editor.heroWidth}" height="${editor.heroHeight}" />
+`, ".12s")}
 
-<g class="repo-card-rise" style="animation-delay: .18s">
+${wrapCardSection(`
   ${renderText(title, editor.titleX, editor.titleY, editor.titleFontSize, "#4a2815", { weight: "700", shadow: true })}
   ${descriptionLine1 ? renderText(descriptionLine1, editor.descriptionX, editor.descriptionY, editor.descriptionFontSize, "#6a3d1c", { weight: "700" }) : ""}
   ${descriptionLine2 ? renderText(descriptionLine2, editor.descriptionX, editor.descriptionY + editor.descriptionFontSize + 7, editor.descriptionFontSize, "#6a3d1c", { weight: "700" }) : ""}
-  ${renderText("A PROJECT WORTH SHOWING", 650, 286, 15, "#a2642b", { anchor: "middle", weight: "700" })}
-</g>
+`, ".18s")}
 
-<g class="repo-card-rise" style="animation-delay: .24s">
-  <rect x="${statPanelX}" y="${statPanelY}" width="480" height="128" fill="#fff0c0" fill-opacity=".78" stroke="#c17c35" stroke-width="3" />
-  <path d="M${statPanelX + 120} ${statPanelY + 12}V${statPanelY + 116} M${statPanelX + 240} ${statPanelY + 12}V${statPanelY + 116} M${statPanelX + 360} ${statPanelY + 12}V${statPanelY + 116}" stroke="#d09a52" stroke-width="2" stroke-dasharray="4 5" />
+${wrapCardSection(`
+  <rect x="${statPanelX}" y="${statPanelY}" width="480" height="${statPanelHeight}" fill="#fff0c0" fill-opacity=".78" stroke="#c17c35" stroke-width="3" />
+  <path d="M${statPanelX + 120} ${statPanelY + 12}V${statPanelY + statPanelHeight - 12} M${statPanelX + 240} ${statPanelY + 12}V${statPanelY + statPanelHeight - 12} M${statPanelX + 360} ${statPanelY + 12}V${statPanelY + statPanelHeight - 12}" stroke="#d09a52" stroke-width="2" stroke-dasharray="4 5" />
   ${statColumns.map((stat) => `
     <image href="${escapeXml(stat.icon)}" x="${stat.x - editor.statsIconSize / 2}" y="${statPanelY + 12}" width="${editor.statsIconSize}" height="${editor.statsIconSize}" />
-    ${renderText(stat.label, stat.x, statPanelY + 84, editor.statsLabelFontSize, "#5b351c", { anchor: "middle", weight: "700" })}
-    ${renderText(stat.value, stat.x, statPanelY + 112, editor.statsValueFontSize, stat.valueColor, { anchor: "middle", weight: "700", shadow: true })}
+    ${editor.showStatLabels ? renderText(stat.label, stat.x, statLabelY, editor.statsLabelFontSize, "#5b351c", { anchor: "middle", weight: "700" }) : ""}
+    ${renderText(stat.value, stat.x, statValueY, editor.statsValueFontSize, stat.valueColor, { anchor: "middle", weight: "700", shadow: true })}
   `).join("")}
-</g>
+`, ".24s")}
 
-<g class="repo-card-rise" style="animation-delay: .30s">
+${wrapCardSection(`
   ${renderText(`OPEN ISSUES ${formatCount(params.issues)}  ·  ${size}`, 650, footerY, 12, "#81532c", { anchor: "middle", weight: "700" })}
-</g>
+`, ".30s")}
 </svg>`;
 }
 
@@ -317,8 +370,9 @@ export function generateRepoSvg(
   params: RepoSvgParams,
   assetUris: RepoCardAssetUris = {},
   editor: RepoCardEditorConfig = DEFAULT_REPO_CARD_EDITOR_CONFIG,
+  animate = true,
 ): string {
-  return buildRepoSvg(params, getAssetUris(assetUris), svgText, editor);
+  return buildRepoSvg(params, getAssetUris(assetUris), svgText, editor, animate);
 }
 
 /**
@@ -330,6 +384,7 @@ export async function generateBakedRepoSvg(
   params: RepoSvgParams,
   assetUris: RepoCardAssetUris = {},
   editor: RepoCardEditorConfig = DEFAULT_REPO_CARD_EDITOR_CONFIG,
+  animate = true,
 ): Promise<string> {
   try {
     await ensureFontsLoaded();
@@ -337,25 +392,14 @@ export async function generateBakedRepoSvg(
     // Keep the API usable when the remote baking fonts are temporarily
     // unavailable. The route still supplies embedded images; the browser
     // can render this text-based SVG with its local fallback font.
-    return buildRepoSvg(params, getAssetUris(assetUris), svgText, editor);
+    return buildRepoSvg(params, getAssetUris(assetUris), svgText, editor, animate);
   }
 
   const resolved: RepoCardAssetUris = { ...assetUris };
   for (const key of REPO_CARD_RENDER_ASSET_KEYS) {
     if (resolved[key]) continue;
-    const source = key === "frame"
-      ? REPO_CARD_ASSETS.frame
-      : key === "hero"
-        ? REPO_CARD_ASSETS.hero
-        : key === "star"
-          ? REPO_CARD_ASSETS.iconStar
-          : key === "fork"
-            ? REPO_CARD_ASSETS.iconFork
-            : key === "language"
-              ? REPO_CARD_ASSETS.iconOrb
-              : REPO_CARD_ASSETS.iconGears;
-    resolved[key] = await toDataUri(source);
+    resolved[key] = await toDataUri(REPO_CARD_ASSET_SOURCES[key]);
   }
 
-  return buildRepoSvg(params, getAssetUris(resolved), bakedText, editor);
+  return buildRepoSvg(params, getAssetUris(resolved), bakedText, editor, animate);
 }

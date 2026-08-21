@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 808 898" width="808" height="898" style="image-rendering:pixelated">
+  <rect width="808" height="898" fill="#17392f" />
+  <rect x="10" y="10" width="788" height="878" rx="12" fill="none" stroke="#6c915e" stroke-width="3" opacity=".7" />
+  <g transform="translate(24,24)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#e5ddba" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">COMMITS</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAB4SURBVDhPY6AZcPaK/08MhirHDrBpwIeh2jABTMGXJme8eOAMgvFxiUO1YQJcGnCJQ7VhAmQNV8JNwBimGZlPtEEgjMsgZDVQbdgBskIQhhmELg5Vjh8ga5gdEQDGyGJQZcQBmKbTjXFgTJYhIDBqEGEwQAYxMAAA8eRPuOjdpRkAAAAASUVORK5CYII=" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">112</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g><g transform="translate(284,24)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#6c5749" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">PULL REQS</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADXSURBVDhPjZGxDQIxDEUzCwNQIRa4jgUoKRiC/np2YRg2YAV6kIMf+bGc6L70dRfb/ym+K6rldPnM7GNzZcHMPj4Wg/vHWm3vz/Phb/pmj+RiCBCA97pUK8wjuRgCNgNhj/bSAQWpdQZ7vInG8XWrjjD6rM7Z4000FEQNAxmCdNi8u1+nIK05oofoKjGQ3dQRP1EEoH9JQ6OVHbMdZGZle2o9Bam5BTMG0T518/QbKUghemuy3a3UcYVNIBMFbEGzngGp6TumSYMRFGH0zB5visHRWV1KKV+YUiFO1hUEcAAAAABJRU5ErkJggg==" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">4</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g><g transform="translate(544,24)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#e5ddba" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">STARS</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADPSURBVDhPnZDBDQIxDARTDi+a4McLiQ+voxZ40ARNUAENUAZ1nEAOHrHxORyw0upie3fPSfmE1Xr/UHr7O0Rzjy7PkRnG67Yym7mthQrup0WlnTVI+9DtbzDAiKlXp2HaRIj5dhgqNYRZN0j/aubzbtPQeoRMgiggohgCYwicvI1uw7U481Xtz0FwNgj+fTV9J0S6lZJtYlgNMWiQrm0118tm3SCjCtUca/V4zAs6wGRnNWofur2FCmC2AXRbjiheXo6Vse/yeWCIQT4OKOUJV0dE0K4iys8AAAAASUVORK5CYII=" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">5</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g><g transform="translate(24,314)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#6c5749" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">ISSUES</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACDSURBVDhPY3jcpvGfGnjUIMJ4iBu0P00GqzgI4zTo775gOA1j48MEXUSWQRd2rAVjZDGQd9C9hE0dVoOwKSQkj+E1XIpxicO8DTcIJoCuAReG6YNhrIGNTSMyxqaHoclO6D82jM0AEMamFoSpZxA6iA8L/A/Cz29dwYph8lDlUMDAAADOcD515qkwQQAAAABJRU5ErkJggg==" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">0</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g><g transform="translate(284,314)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#6c5749" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">FOLLOWERS</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACbSURBVDhPY6AbcPaK/4+MocKkAXRDYBgqTRxA1mj2uByMSTYI2RC9DU2kG4RsAAiDDIFhdDkQhmpDBdgUIhtElGHIEn/3BYPx4zYNrBgmj6wHagzCIGSFhDBILYpBMA7MIGIMg6lD1oviGhjenyaDwkfG6HIYBiErINYgEHskGYRLMTpGl8MwCNkwYg1C1oszLcE0IIvjNoSBAQB2YzSQwHpCLQAAAABJRU5ErkJggg==" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">0</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g><g transform="translate(544,314)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#e5ad4b" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">REPOS</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAB6SURBVDhPY3D2iv9PDUw9g/Q2NP2nBqaeQUq9yVidSgoGmQF2ETZJUjDYRcgGkQrIMujOw+coGARINgjdELIMwmYICIMA0QZhMwCGQYAog7BphmEYIGgQNs0wjAzwGoRNMwyjA7wGkQJwGkQupr5BoEwHosnBEL1N/wHv2WDbcKAhzAAAAABJRU5ErkJggg==" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">22</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g><g transform="translate(24,604)">
+  <style>
+    .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: #fff4c8; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
+    .loot-value { font-size: 42px; }
+    .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
+    @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  </style>
+  <g class="loot-pop">
+    <path d="M26 8h188l18 18v218l-18 18H26L8 244V26Z" fill="#211a18" stroke="#0e0c0b" stroke-width="3" />
+    <path d="M29 16h182l12 12v202l-12 12H29l-12-12V28Z" fill="#d8c08b" stroke="#8c653e" stroke-width="3" />
+    <path d="M38 27h164l9 9v184l-9 9H38l-9-9V36Z" fill="#6c5749" stroke="#33251b" stroke-width="4" />
+    <path d="M46 38h148v166H46Z" fill="#1c3027" opacity=".46" />
+    <path d="M51 43h138v156H51Z" fill="#0f221c" opacity=".68" />
+    <path d="M74 23h92v17H74Z" fill="#f2dfa4" opacity=".55" />
+    <path d="M34 29h12v12H34Z" fill="#fff0bc" opacity=".48" />
+    <path d="M194 29h12v12h-12Z" fill="#765238" opacity=".7" />
+    <text x="120" y="42" class="loot-title" text-anchor="middle">MERGED PRs</text>
+    <g transform="translate(75 67)">
+      <path d="M17 0h56l17 17v58L73 92H17L0 75V17Z" fill="#0b1714" stroke="#080d0c" stroke-width="3" />
+      <path d="M19 7h52l12 12v48L71 79H19L7 67V19Z" fill="#d7bc76" stroke="#4a3925" stroke-width="3" />
+      <path d="M24 13h42l9 9v38l-9 9H24l-9-9V22Z" fill="#2c4c35" />
+      <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACbSURBVDhP7ZHLDcIwEAXdGzeaoAhOFMIBuqAfLpwog2itHfS8/uAg5ZYnjdjYbyeRSHv+z+F4+ih+vC5RAn49Hxafr3dmExGzkpdIqxBFI7oSoye63h/VeSGxwvlyy7+UDZ61F1/yFVH+JWLmvivS2aQq1hmmRBEVsQerRMAOFP8YpdbnK5WA6IUVRyLt+noZLRgtmZ1x72uSlBaMvMzcf4SucgAAAABJRU5ErkJggg==" x="27" y="16" width="36" height="36" preserveAspectRatio="xMidYMid meet" style="image-rendering:pixelated" />
+      <path d="M25 62h42" stroke="#f7e6a2" stroke-width="3" opacity=".65" />
+    </g>
+    <text x="120" y="202" class="loot-value" text-anchor="middle">3</text>
+    <path d="M62 221h116v9H62Z" fill="#f1dfa2" opacity=".75" />
+    <path d="M80 238h80v5H80Z" fill="#241b17" opacity=".6" />
+  </g>
+</g>
+</svg>

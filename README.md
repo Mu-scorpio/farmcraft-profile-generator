@@ -1,52 +1,116 @@
-# FarmCraft
+<div align="center">
+  <h1>🌾 FarmCraft</h1>
+  <p><strong>我生不愿六国印，但愿耕种二顷田</strong></p>
+  <p>贡献草地 · 战利品大厅 · 玩家护照 · 仓库卡片</p>
+  <p>
+    <a href="https://github.com/Mu-scorpio/farmcraft-profile-generator">项目仓库</a>
+    ·
+    <a href="LICENSE">CC BY-NC 4.0</a>
+    ·
+    <a href="https://github.com/Mu-scorpio/farmcraft-profile-generator/issues">反馈问题</a>
+  </p>
+</div>
 
-把 GitHub 贡献记录种进一座茂密的像素乡镇：二维贡献草地、战利品徽章、农夫名片和仓库卡片都可以直接预览、下载或嵌入 GitHub Profile README。
+<p align="center">
+  <img src="docs/screenshots/home-zh.png" alt="FarmCraft 中文首页" width="960" />
+</p>
 
-这是基于 [CommitCraft](https://github.com/WJZ-P/CommitCraft) 的生成流程重做的 FarmCraft 2.0：保留原仓库的四种 SVG 输出与 URL API，把视觉语言换成乡村小镇、发育小草、战利品徽章和 Zpix 像素字体。
+FarmCraft 2.0 是一个面向 GitHub Profile、README 和项目展示的像素风数据可视化工具。它把提交记录、用户统计和仓库信息，换算成一座可以浏览、调节、下载和嵌入的像素农场。
 
-## 本地运行
+### 贡献草地
+
+<p align="center">
+  <img src="docs/examples/mu-scorpio-contribution-meadow.svg" alt="Mu-scorpio 带农场外框的贡献草地 SVG" width="960" />
+</p>
+
+### 战利品大厅
+
+每项统计都可以独立下载、引用和嵌入：
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-commits.svg" alt="Mu-scorpio commits 战利品徽章" width="180" /></td>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-prs.svg" alt="Mu-scorpio pull requests 战利品徽章" width="180" /></td>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-stars.svg" alt="Mu-scorpio stars 战利品徽章" width="180" /></td>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-issues.svg" alt="Mu-scorpio issues 战利品徽章" width="180" /></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-followers.svg" alt="Mu-scorpio followers 战利品徽章" width="180" /></td>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-repos.svg" alt="Mu-scorpio repositories 战利品徽章" width="180" /></td>
+    <td align="center"><img src="docs/examples/mu-scorpio-loot-merged.svg" alt="Mu-scorpio merged pull requests 战利品徽章" width="180" /></td>
+    <td></td>
+  </tr>
+</table>
+
+### 玩家护照
+
+<p align="center">
+  <img src="docs/examples/mu-scorpio-player-passport.svg" alt="Mu-scorpio 玩家护照 SVG" width="720" />
+</p>
+
+### 仓库卡片
+
+<p align="center">
+  <img src="docs/examples/farmcraft-repo-card.svg" alt="FarmCraft 仓库卡片 SVG" width="960" />
+</p>
+
+## 项目结构
+
+```text
+app/
+├─ page.tsx                         页面、输入解析、视图切换
+├─ components/                      四种视图与编辑器组件
+├─ api/                             数据与 SVG 接口
+└─ lib/
+   ├─ github.ts                     GitHub 访问与数据整理
+   ├─ inputParser.ts                用户名、仓库短格式、GitHub URL 解析
+   ├─ mapSvg.ts                     贡献草地 SVG
+   ├─ bannerSvg.ts                  战利品大厅 SVG
+   ├─ cardSvg.ts                    玩家护照 SVG
+   └─ repoSvg.ts                    仓库卡片 SVG 与编辑配置
+public/assets/                      农场与仓库卡片素材
+docs/
+├─ examples/                        README 直接展示的 SVG 成果
+└─ screenshots/                     README 首页截图
+worker/                             Cloudflare Workers 入口
+```
+
+## 素材与授权
+
+- 项目灵感来源于 [wjz-p](https://github.com/wjz-p) 的 GitHub 项目。
+- 农场素材来自 [Kenney Pixel Platformer Farm Expansion](https://kenney.nl/assets/pixel-platformer-farm-expansion)，项目内保留 CC0 许可文件。
+- 像素字体使用 [Zpix](https://github.com/SolidZORO/zpix-pixel-font)。
+- 项目整体授权见 [LICENSE](LICENSE)：Creative Commons Attribution-NonCommercial 4.0 International。
+
+## 开发状态
+
+这是一个持续生长中的个人项目。欢迎提交 Issue、提出视觉建议，或者把自己的 GitHub 仓库种进农场里。
+
+## 部署指南
+
+### 本地开发
 
 ```bash
+git clone https://github.com/Mu-scorpio/farmcraft-profile-generator.git
+cd farmcraft-profile-generator
 npm install
 npm run dev
 ```
 
-打开 `http://127.0.0.1:3000`。首页自带确定性的演示农场；也可以输入 GitHub 用户名、`owner/repo` 或完整仓库 URL。
+然后打开 <http://127.0.0.1:3001>。
+
+### 生产运行
 
 ```bash
 npm run build
 npm run start
 ```
 
-没有 GitHub token 时，服务端会使用 GitHub 公共 REST 接口和贡献日历页面；访问频率较高时，可以在 `.env.local` 中配置 `GITHUB_TOKEN`。
+### Cloudflare Workers
 
-## 输出接口
+仓库保留了 `vite.config.ts`、`wrangler.jsonc` 和 `worker/` 部署链路：
 
-```text
-/api/map/{username}.svg
-/api/card/{username}.svg?quote=Keep%20growing
-/api/banner/{username}/{statId}.svg
-/api/repo/{owner}/{repo}.svg
+```bash
+npm run build:vinext
+npm run deploy
 ```
-
-`statId` 支持 `commits`、`prs`、`stars`、`issues`、`followers`、`repos` 和 `merged`。例如：
-
-```md
-![Contribution Farm](https://your-domain.example/api/map/your-name.svg)
-![Farmer Passport](https://your-domain.example/api/card/your-name.svg)
-![Repository Harvest](https://your-domain.example/api/repo/owner/repo.svg)
-```
-
-## 素材与授权
-
-- 本地农场贴图来自 [Kenney Pixel Platformer Farm Expansion](https://kenney.nl/assets/pixel-platformer-farm-expansion)，随项目保留 CC0 许可文件：`public/assets/farm/LICENSE.txt`。
-- 中文像素字体为 [Zpix](https://github.com/SolidZORO/zpix-pixel-font)，放在 `public/fonts/zpix.ttf`，用于页面和下载时的像素文字。
-- 原仓库的架构、输出类型和交互目标参考 [WJZ-P/CommitCraft](https://github.com/WJZ-P/CommitCraft)；本项目的 FarmCraft 视觉实现和本地素材编排是独立改造。
-
-## 目录速览
-
-- `app/page.tsx`：生成器界面、演示数据、用户/仓库输入与视图切换。
-- `app/lib/mapSvg.ts`：二维贡献草地 SVG，贡献量映射为小草的发育阶段。
-- `app/lib/bannerSvg.ts`、`cardSvg.ts`、`repoSvg.ts`：三种像素 SVG 输出。
-- `public/assets/farm/`：乡村小镇背景、像素图标、头像回退图和授权信息。
-- `DESIGN.md`：FarmCraft 视觉系统与实现约束。

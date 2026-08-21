@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { ContributionDay, ContributionCalendar, UserStats } from "@/app/lib/github";
+import type { ContributionDay, ContributionCalendar, ContributionWeek, UserStats } from "@/app/lib/github";
 import { contributionLevel, generateMapSvg, MAP_LEVELS } from "@/app/lib/mapSvg";
 import EndpointCopyBox from "./EndpointCopyBox";
 
@@ -21,17 +21,37 @@ function formatDay(day: ContributionDay): string {
   return `${day.date} · ${day.contributionCount.toLocaleString()} contributions`;
 }
 
+function getWeekdayIndex(day: ContributionDay, fallback: number): number {
+  const timestamp = Date.parse(`${day.date}T00:00:00Z`);
+  if (Number.isNaN(timestamp)) return fallback;
+  return new Date(timestamp).getUTCDay();
+}
+
+function isContributionDay(value: unknown): value is ContributionDay {
+  if (!value || typeof value !== "object") return false;
+  const day = value as Partial<ContributionDay>;
+  return typeof day.date === "string"
+    && typeof day.contributionCount === "number"
+    && Number.isFinite(day.contributionCount)
+    && typeof day.color === "string";
+}
+
 export default function ContributionMap({ calendar, username, avatarUrl, stats }: ContributionMapProps) {
   const t = useTranslations("components");
-  const allDays = useMemo(() => calendar.weeks.flatMap((week) => week.contributionDays), [calendar.weeks]);
-  const [selectedDay, setSelectedDay] = useState<ContributionDay | null>(allDays[allDays.length - 1] || null);
-
-  useEffect(() => {
-    setSelectedDay(allDays[allDays.length - 1] || null);
-  }, [allDays]);
+  const safeWeeks = useMemo<ContributionWeek[]>(() => {
+    if (!Array.isArray(calendar?.weeks)) return [];
+    return calendar.weeks.map((week) => ({
+      contributionDays: Array.isArray(week?.contributionDays)
+        ? week.contributionDays.filter(isContributionDay)
+        : [],
+    }));
+  }, [calendar.weeks]);
+  const allDays = useMemo(() => safeWeeks.flatMap((week) => week.contributionDays), [safeWeeks]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const selectedDay = allDays.find((day) => day.date === selectedDate) || allDays[allDays.length - 1] || null;
 
   const handleDownload = () => {
-    const svg = generateMapSvg({ weeks: calendar.weeks, interactive: false, animate: true });
+    const svg = generateMapSvg({ weeks: safeWeeks, interactive: false, animate: true });
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -43,7 +63,7 @@ export default function ContributionMap({ calendar, username, avatarUrl, stats }
     URL.revokeObjectURL(url);
   };
 
-  if (calendar.weeks.length === 0) return null;
+  if (safeWeeks.length === 0) return null;
 
   const selectedLevel = selectedDay ? contributionLevel(selectedDay) : 0;
   const activeAvatar = avatarUrl || fallbackAvatarUrl();
@@ -90,19 +110,25 @@ export default function ContributionMap({ calendar, username, avatarUrl, stats }
         <div className="meadow-field-window">
           <div className="meadow-grid-scroll" role="grid" aria-label={t("mapHint")}>
             <div className="meadow-grid">
-              {calendar.weeks.map((week, weekIndex) => week.contributionDays.map((day) => {
+              {safeWeeks.map((week, weekIndex) => week.contributionDays.map((day, dayIndex) => {
                 const level = contributionLevel(day);
+                const weekdayIndex = getWeekdayIndex(day, dayIndex);
                 return (
                   <button
                     type="button"
                     key={day.date}
                     className={`grass-cell grass-level-${level}`}
                     role="gridcell"
+                    aria-rowindex={weekdayIndex + 1}
                     aria-label={formatDay(day)}
                     title={formatDay(day)}
-                    onMouseEnter={() => setSelectedDay(day)}
-                    onFocus={() => setSelectedDay(day)}
-                    style={{ animationDelay: `${(weekIndex % 9) * 20}ms` }}
+                    onMouseEnter={() => setSelectedDate(day.date)}
+                    onFocus={() => setSelectedDate(day.date)}
+                    style={{
+                      gridColumn: weekIndex + 1,
+                      gridRow: weekdayIndex + 1,
+                      animationDelay: `${(weekIndex % 9) * 20}ms`,
+                    }}
                   >
                     <span className="grass-plot" aria-hidden="true" />
                   </button>

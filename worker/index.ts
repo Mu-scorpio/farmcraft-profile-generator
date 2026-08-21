@@ -1,16 +1,21 @@
+type ConsoleWithTask = Console & {
+  createTask?: () => { run: (callback: () => void) => void };
+};
+
 try {
-  if (typeof console !== 'undefined') {
+  if (typeof console !== "undefined") {
     const fakeTask = () => ({
-      run: (cb: any) => cb()
+      run: (callback: () => void) => callback(),
     });
-    (console as any).createTask = fakeTask;
-    Object.defineProperty(console, 'createTask', {
+    const consoleWithTask = console as ConsoleWithTask;
+    consoleWithTask.createTask = fakeTask;
+    Object.defineProperty(console, "createTask", {
       value: fakeTask,
       writable: true,
-      configurable: true
+      configurable: true,
     });
   }
-} catch (e) {
+} catch {
   // 忽略补丁失败的情况，但是加这个根本没用？？？
 }
 
@@ -44,7 +49,7 @@ interface Env {
 // 一次性注入：Cloudflare secrets 不可枚举，需显式按名字读取
 let envInjected = false;
 
-export default {
+const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (!envInjected) {
       if (env.GITHUB_TOKEN) process.env["GITHUB_TOKEN"] = env.GITHUB_TOKEN;
@@ -68,3 +73,5 @@ export default {
     return handler.fetch(request);
   },
 };
+
+export default worker;

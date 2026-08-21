@@ -9,42 +9,78 @@ import ProfileCardView from "./components/ProfileCard";
 import RepoCard from "./components/RepoCard";
 import type { ContributionCalendar, UserStats } from "./lib/github";
 import type { RepoSvgParams } from "./lib/repoSvg";
-import { DEMO_AVATAR, DEMO_CALENDAR, DEMO_STATS, DEMO_USERNAME, getDemoCalendar, getFallbackAvatar } from "./lib/demoData";
+import { parseGitHubInput } from "./lib/inputParser";
 import { FARM_ASSETS } from "./lib/themeAssets";
 
 const PROJECT_REPO_URL = "https://github.com/Mu-scorpio/farmcraft-profile-generator";
 
-function parseInput(input: string):
-  | { type: "repo"; owner: string; repo: string }
-  | { type: "user"; username: string }
-  | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
+type ActiveView = "map" | "banner" | "card" | "repo";
 
-  const urlMatch = trimmed.match(/github\.com\/([^/]+)\/([^/\s?#]+)/i);
-  if (urlMatch) return { type: "repo", owner: urlMatch[1], repo: urlMatch[2].replace(/\.git$/, "") };
+type DisplayError = {
+  message: string;
+  recommendation?: string;
+};
 
-  const slashMatch = trimmed.match(/^([^/\s]+)\/([^/\s]+)$/);
-  if (slashMatch) return { type: "repo", owner: slashMatch[1], repo: slashMatch[2] };
-
-  return { type: "user", username: trimmed.replace(/^@/, "") };
+class ApiRequestError extends Error {
+  constructor(message: string, public readonly recommendation?: string) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
 }
 
-type ActiveView = "map" | "banner" | "card" | "repo";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function payloadString(data: unknown, key: string): string | undefined {
+  if (!isRecord(data)) return undefined;
+  return typeof data[key] === "string" ? data[key] : undefined;
+}
+
+function getFallbackAvatar(): string {
+  return "/assets/farm/avatar-fallback.svg";
+}
+
+function isContributionCalendarPayload(data: unknown): data is ContributionCalendar & { avatarUrl?: string; stats?: UserStats } {
+  if (!isRecord(data) || !Number.isFinite(data.totalContributions) || !Array.isArray(data.weeks)) return false;
+  return data.weeks.every((week) => {
+    if (!isRecord(week) || !Array.isArray(week.contributionDays)) return false;
+    return week.contributionDays.every((day) => {
+      if (!isRecord(day)) return false;
+      return typeof day.date === "string"
+        && Number.isFinite(day.contributionCount)
+        && typeof day.color === "string";
+    });
+  });
+}
+
+function isRepoSvgPayload(data: unknown): data is RepoSvgParams {
+  if (!isRecord(data)) return false;
+  return typeof data.owner === "string"
+    && typeof data.repo === "string"
+    && typeof data.description === "string"
+    && typeof data.language === "string"
+    && typeof data.languageColor === "string"
+    && Number.isFinite(data.stars)
+    && Number.isFinite(data.forks)
+    && Number.isFinite(data.issues)
+    && Number.isFinite(data.sizeKb)
+    && typeof data.isPrivate === "boolean";
+}
 
 export default function Home() {
   const t = useTranslations();
   const locale = useLocale();
-  const [input, setInput] = useState(DEMO_USERNAME);
-  const [displayUsername, setDisplayUsername] = useState(DEMO_USERNAME);
+  const [input, setInput] = useState("");
+  const [displayUsername, setDisplayUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [calendarData, setCalendarData] = useState<ContributionCalendar | null>(DEMO_CALENDAR);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(DEMO_AVATAR);
-  const [userStats, setUserStats] = useState<UserStats | null>(DEMO_STATS);
+  const [calendarData, setCalendarData] = useState<ContributionCalendar | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [repoData, setRepoData] = useState<RepoSvgParams | null>(null);
-  const [resultMode, setResultMode] = useState<"user" | "repo" | null>("user");
+  const [resultMode, setResultMode] = useState<"user" | "repo" | null>(null);
   const [activeView, setActiveView] = useState<ActiveView>("map");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<DisplayError | null>(null);
   const [weather, setWeather] = useState<"clear" | "rain" | "snow">("clear");
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const mouseRef = useRef({ x: 0, y: 0 });
@@ -91,21 +127,20 @@ export default function Home() {
     };
   }, [isAboutOpen]);
 
-  const showDemo = useCallback(() => {
-    setInput(DEMO_USERNAME);
-    setDisplayUsername(DEMO_USERNAME);
-    setCalendarData(getDemoCalendar());
-    setAvatarUrl(DEMO_AVATAR);
-    setUserStats(DEMO_STATS);
-    setRepoData(null);
-    setResultMode("user");
-    setActiveView("map");
-    setError(null);
-  }, []);
-
   async function handleGenerate() {
-    const parsed = parseInput(input);
-    if (!parsed) return;
+    const parsed = parseGitHubInput(input);
+    if (!parsed) {
+      setCalendarData(null);
+      setAvatarUrl(null);
+      setUserStats(null);
+      setRepoData(null);
+      setResultMode(null);
+      setError({
+        message: t("error.invalidInput"),
+        recommendation: t("error.invalidInputRecommendation"),
+      });
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -118,24 +153,71 @@ export default function Home() {
     try {
       if (parsed.type === "user") {
         const response = await fetch(`/api/contributions/${encodeURIComponent(parsed.username)}`);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || t("error.contributions"));
-        setCalendarData(data as ContributionCalendar);
-        setAvatarUrl(data.avatarUrl || getFallbackAvatar(parsed.username));
-        setUserStats(data.stats || DEMO_STATS);
+        const data: unknown = await response.json().catch(() => null);
+        const errorMessage = payloadString(data, "error");
+        if (!response.ok || errorMessage) {
+          const recommendation = locale === "zh"
+            ? payloadString(data, "recommendationZh") || payloadString(data, "recommendation")
+            : payloadString(data, "recommendation");
+          throw new ApiRequestError(errorMessage || t("error.contributions"), recommendation);
+        }
+        if (!isContributionCalendarPayload(data)) {
+          throw new ApiRequestError(t("error.invalidResponse"), t("error.invalidResponseRecommendation"));
+        }
+        setCalendarData(data);
+        setAvatarUrl(typeof data.avatarUrl === "string" ? data.avatarUrl : getFallbackAvatar());
+        setUserStats(data.stats ?? null);
         setDisplayUsername(parsed.username);
         setResultMode("user");
         setActiveView("map");
       } else {
-        const response = await fetch(`/api/repoinfo/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || t("error.repo"));
-        setRepoData(data as RepoSvgParams);
+        const [repoResponse, ownerResponse] = await Promise.all([
+          fetch(`/api/repoinfo/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`),
+          fetch(`/api/contributions/${encodeURIComponent(parsed.owner)}`),
+        ]);
+        const [repoDataPayload, ownerDataPayload] = await Promise.all([
+          repoResponse.json().catch(() => null) as Promise<unknown>,
+          ownerResponse.json().catch(() => null) as Promise<unknown>,
+        ]);
+
+        const repoErrorMessage = payloadString(repoDataPayload, "error");
+        if (!repoResponse.ok || repoErrorMessage) {
+          const recommendation = locale === "zh"
+            ? payloadString(repoDataPayload, "recommendationZh") || payloadString(repoDataPayload, "recommendation")
+            : payloadString(repoDataPayload, "recommendation");
+          throw new ApiRequestError(repoErrorMessage || t("error.repo"), recommendation);
+        }
+        if (!isRepoSvgPayload(repoDataPayload)) {
+          throw new ApiRequestError(t("error.invalidResponse"), t("error.invalidResponseRecommendation"));
+        }
+
+        const ownerErrorMessage = payloadString(ownerDataPayload, "error");
+        if (!ownerResponse.ok || ownerErrorMessage) {
+          const recommendation = locale === "zh"
+            ? payloadString(ownerDataPayload, "recommendationZh") || payloadString(ownerDataPayload, "recommendation")
+            : payloadString(ownerDataPayload, "recommendation");
+          throw new ApiRequestError(ownerErrorMessage || t("error.contributions"), recommendation);
+        }
+        if (!isContributionCalendarPayload(ownerDataPayload)) {
+          throw new ApiRequestError(t("error.invalidResponse"), t("error.invalidResponseRecommendation"));
+        }
+
+        setRepoData(repoDataPayload);
+        setCalendarData(ownerDataPayload);
+        setAvatarUrl(typeof ownerDataPayload.avatarUrl === "string" ? ownerDataPayload.avatarUrl : getFallbackAvatar());
+        setUserStats(ownerDataPayload.stats ?? null);
+        setDisplayUsername(parsed.owner);
         setResultMode("repo");
         setActiveView("repo");
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("error.network"));
+      if (caught instanceof ApiRequestError) {
+        setError({ message: caught.message, recommendation: caught.recommendation });
+      } else if (caught instanceof Error && !/fetch failed|failed to fetch|network/i.test(caught.message)) {
+        setError({ message: caught.message, recommendation: t("error.networkRecommendation") });
+      } else {
+        setError({ message: t("error.network"), recommendation: t("error.networkRecommendation") });
+      }
     } finally {
       setLoading(false);
     }
@@ -145,15 +227,13 @@ export default function Home() {
     if (view === "repo") {
       setActiveView("repo");
       setResultMode("repo");
-      setRepoData(null);
       setError(null);
       return;
     }
 
-    if (resultMode !== "user" || !calendarData) {
-      showDemo();
-    }
     setActiveView(view);
+    setResultMode(calendarData ? "user" : null);
+    setError(null);
   };
 
   const toggleLocale = () => {
@@ -229,13 +309,9 @@ export default function Home() {
                 </button>
               </div>
               <p className="farm-input-hint">{t("input.hint")}</p>
-              <div className="farm-demo-bar">
-                <span>{t("input.demoHint")} <span className="farm-demo-chip">{DEMO_USERNAME}</span></span>
-                <button type="button" className="mc-btn-secondary text-xs" onClick={showDemo}>{t("input.demoAction")}</button>
-              </div>
 
               {!loading && !error && (resultMode === "user" || resultMode === "repo") && (
-                <nav className="mc-generator-tabs mt-6 mb-2" aria-label="Generators" role="tablist">
+                <nav className="mc-generator-tabs mt-6 mb-2" aria-label="Views" role="tablist">
                   {viewKeys.map((view) => (
                     <button
                       key={view}
@@ -267,13 +343,14 @@ export default function Home() {
                           <img key={asset} src={asset} alt="" className="mc-pixel-icon h-8 w-8 animate-bounce" style={{ animationDelay: `${index * 0.14}s`, animationFillMode: "both" }} />
                         ))}
                       </div>
-                      <p className="text-[#e5ad4b] animate-pulse mc-text-shadow">{parsedLoadingLabel(parseInput(input)?.type, t)}</p>
+                      <p className="text-[#e5ad4b] animate-pulse mc-text-shadow">{parsedLoadingLabel(parseGitHubInput(input)?.type, t)}</p>
                     </div>
                   )}
                   {error && (
                     <div className="text-center text-[#f1a08b] mc-text-shadow-error">
                       <p className="mb-1 text-lg">{t("error.label")}</p>
-                      <p className="text-sm">{error}</p>
+                      <p className="text-sm">{error.message}</p>
+                      {error.recommendation && <p className="mt-2 text-xs text-[#f2d79a]">{t("error.recommendation")} {error.recommendation}</p>}
                     </div>
                   )}
                 </div>
@@ -291,7 +368,6 @@ export default function Home() {
               {resultMode === "repo" && repoData && !loading && !error && <RepoCard repoData={repoData} />}
               {resultMode === "repo" && !repoData && !loading && !error && (
                 <div className="mc-display mt-6 text-center">
-                  <p className="mb-2 text-[#e5ad4b] mc-text-shadow">{t("empty.repoTitle")}</p>
                   <p className="text-sm text-[#d6e0c8] mc-text-shadow-light">{t("empty.repoSubtitle")}</p>
                 </div>
               )}

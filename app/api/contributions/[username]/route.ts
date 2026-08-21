@@ -1,4 +1,10 @@
-import {fetchContributions} from "@/app/lib/github";
+import {
+    fetchContributions,
+    getGitHubErrorPayload,
+    getGitHubErrorStatus,
+} from "@/app/lib/github";
+
+export const runtime = "nodejs";
 
 export async function GET(
     request: Request,
@@ -6,19 +12,20 @@ export async function GET(
 ) {
     const url = new URL(request.url);
     console.log("[API] ====== 收到请求 ======");
-    console.log("[API] URL:", url.toString());
+    const safeLogUrl = new URL(url);
+    safeLogUrl.searchParams.delete("token");
+    console.log("[API] URL:", safeLogUrl.toString());
 
     const {username} = await params;
     console.log("[API] 解析到 username:", username);
 
     const {searchParams} = url;
 
-    // Token 优先从 query 参数取，其次从环境变量取
-    const token = searchParams.get("token") || process.env["GITHUB_TOKEN"] || "";
-    console.log("[API] Token 来源:", searchParams.get("token") ? "query param" : process.env["GITHUB_TOKEN"] ? "env GITHUB_TOKEN" : "无");
-    console.log("[API] Token 长度:", token.length, "| 前8位:", token.slice(0, 8) + "...");
-
-    if (!token) console.log("[API] 使用公开 GitHub REST/贡献图回退模式");
+    // Anonymous access is attempted first inside fetchContributions. This
+    // query parameter remains supported for backwards compatibility, but
+    // environment and GitHub CLI credentials are resolved server-side.
+    const token = searchParams.get("token") || "";
+    console.log("[API] 认证策略: 先尝试匿名访问，失败后尝试环境变量 token / GitHub CLI");
 
     const from = searchParams.get("from") || undefined;
     const to = searchParams.get("to") || undefined;
@@ -35,12 +42,9 @@ export async function GET(
             },
         });
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Unknown error";
-        const stack = err instanceof Error ? err.stack : "";
-        const status = message.includes("not found") ? 404 : 500;
-        console.log("[API] ❌ 异常! status =", status);
-        console.log("[API] ❌ message:", message);
-        console.log("[API] ❌ stack:", stack);
-        return Response.json({error: message}, {status});
+        const payload = getGitHubErrorPayload(err);
+        const status = getGitHubErrorStatus(err);
+        console.log("[API] ❌ GitHub 请求失败! code =", payload.code, "status =", status);
+        return Response.json(payload, {status});
     }
 }

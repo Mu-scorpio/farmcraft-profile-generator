@@ -1,4 +1,10 @@
-import { fetchRepoInfo } from "@/app/lib/github";
+import {
+  fetchRepoInfo,
+  getGitHubErrorPayload,
+  getGitHubErrorStatus,
+} from "@/app/lib/github";
+
+export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
@@ -7,7 +13,7 @@ export async function GET(
   const { owner, repo } = await params;
   const url = new URL(request.url);
   const { searchParams } = url;
-  const token = searchParams.get("token") || process.env["GITHUB_TOKEN"] || "";
+  const token = searchParams.get("token") || "";
 
   try {
     const repoInfo = await fetchRepoInfo(owner, repo, token);
@@ -17,8 +23,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const status = message.includes("not found") ? 404 : 500;
-    return Response.json({ error: message }, { status });
+    const payload = getGitHubErrorPayload(err);
+    return Response.json(payload, { status: getGitHubErrorStatus(err) });
   }
 }

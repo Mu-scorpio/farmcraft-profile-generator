@@ -33,16 +33,49 @@ export const REPO_CARD_ASSETS = {
   badgeBricks: "/assets/repo-card/repo-card-badge-bricks.png",
   badgePouch: "/assets/repo-card/repo-card-badge-pouch.png",
   badgeSword: "/assets/repo-card/repo-card-badge-sword.png",
+  iconBrain: "/assets/repo-card/repo-card-icon-brain.png",
+  iconController: "/assets/repo-card/repo-card-icon-controller.png",
 } as const;
 
 export const REPO_CARD_RENDER_ASSET_KEYS = [
   "frame",
   "hero",
+  "heroController",
+  "heroGears",
+  "heroBrain",
+  "badgeToolbox",
+  "badgeBricks",
+  "badgePouch",
+  "badgeSword",
   "star",
   "fork",
   "language",
   "activity",
+  "issues",
+  "size",
+  "brain",
+  "controller",
 ] as const;
+
+export const REPO_CARD_ASSET_SOURCES = {
+  frame: REPO_CARD_ASSETS.frame,
+  hero: REPO_CARD_ASSETS.hero,
+  heroController: REPO_CARD_ASSETS.heroController,
+  heroGears: REPO_CARD_ASSETS.heroGears,
+  heroBrain: REPO_CARD_ASSETS.heroBrain,
+  badgeToolbox: REPO_CARD_ASSETS.badgeToolbox,
+  badgeBricks: REPO_CARD_ASSETS.badgeBricks,
+  badgePouch: REPO_CARD_ASSETS.badgePouch,
+  badgeSword: REPO_CARD_ASSETS.badgeSword,
+  star: REPO_CARD_ASSETS.iconStar,
+  fork: REPO_CARD_ASSETS.iconFork,
+  language: REPO_CARD_ASSETS.iconOrb,
+  activity: REPO_CARD_ASSETS.iconGears,
+  issues: REPO_CARD_ASSETS.iconTag,
+  size: REPO_CARD_ASSETS.iconChest,
+  brain: REPO_CARD_ASSETS.iconBrain,
+  controller: REPO_CARD_ASSETS.iconController,
+} as const;
 
 export const FARM_PALETTE = {
   forest: "#16392d",

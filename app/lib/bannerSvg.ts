@@ -163,7 +163,7 @@ function renderLootBadge({ title, value, icon, tier, baked = false }: LootSvgPar
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 240 270" width="240" height="270" class="farm-loot-svg" style="image-rendering:pixelated">
   <style>
     .loot-title,.loot-value { font-family: 'Zpix', 'Courier New', monospace; font-weight: 700; fill: ${LOOT_TEXT}; }
-    .loot-title { font-size: 14px; letter-spacing: .08em; }
+    .loot-title { font-size: 16px; letter-spacing: .06em; stroke: #1a1512; stroke-width: 2px; stroke-linejoin: round; paint-order: stroke fill; }
     .loot-value { font-size: 42px; }
     .loot-pop { transform-box: fill-box; transform-origin: center; animation: loot-pop .5s steps(3,end) both; }
     @keyframes loot-pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
@@ -236,16 +236,21 @@ export function generateLootHallSvg(items: StatItem[]): string {
 export async function generateBakedBannerSvg(params: BannerSvgParams): Promise<string> {
   await ensureFontsLoaded();
   await ensureBannerAssetsLoaded();
-  const config = TIER_CONFIG[params.tier] || TIER_CONFIG.D;
   const iconDataUri = await toDataUri(params.icon);
   const titlePath = bakeTextElement({
     text: params.title,
     x: 120,
     y: 42,
-    fontSize: 14,
+    fontSize: 16,
     fill: LOOT_TEXT,
     textAnchor: "middle",
     fontWeight: "bold",
+    extraAttrs: {
+      stroke: "#1a1512",
+      "stroke-width": "2",
+      "stroke-linejoin": "round",
+      "paint-order": "stroke fill",
+    },
   });
   const valuePath = bakeTextElement({
     text: String(params.value),
